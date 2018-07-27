@@ -1,8 +1,16 @@
 # GENDIS: GENetic DIscovery of Shapelets
 
+In the time series classification domain, shapelets are small subseries that are discriminative for a certain class. It has been shown that by projecting the original dataset to a distance space, where each axis corresponds to the distance to a certain shapelet, is able to achieve state-of-the-art results on a plethora of datasets.
+
+This repository contains an implementation of `GENDIS`, an algorithm that searched for a set of shapelets in a genetic fashion. The algorithm is insensitive to its parameters (such as population size, crossover and mutation probability, ...) and can quickly extract a small set of shapelets that is able to achieve predictive performances similar (or better) to that of other shapelet techniques.
+
 ## Installation
 
 ## Example
+
+## Paper experiments
+
+In order to reproduce the results from the corresponding paper...
 
 ## Tests
 
