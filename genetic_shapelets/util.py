@@ -3,11 +3,9 @@ from scipy.spatial.distance import euclidean
 
 def z_norm(x):
     """Normalize time series such that it has zero mean and unit variance
-    >>> list(np.around(z_norm([0, 3, 6]), 4)) # doctest: +NORMALIZE_WHITESPACE
+    >>> list(np.around(z_norm([0, 3, 6]), 4))
     [-1.2247, 0.0, 1.2247]
     """
-    # IMPORTANT: faster than scipy.stats.zscore for smaller arrays (< 1 mill)
-
     mu_x = np.mean(x)
     sigma_x = np.std(x)
     if sigma_x == 0: sigma_x = 1
@@ -25,7 +23,7 @@ def sdist_no_norm(x, y):
         dist = euclidean(x, y[j:j+len(x)])
         min_dist = min(dist, min_dist)
     return min_dist 
-    
+
 
 def sdist(x, y):
     """A distance metric, where each subseries and timeseries are first

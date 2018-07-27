@@ -97,7 +97,6 @@ class GeneticExtractor():
     >>> _ = lr.fit(distances, y)
     >>> lr.score(distances, y)
     1.0
-
     """
     def __init__(self, population_size=50, iterations=25, verbose=False, 
                  normed=False, add_noise_prob=0.3, add_shapelet_prob=0.3, 
@@ -119,7 +118,7 @@ class GeneticExtractor():
 
         Parameters
         ----------
-        X : array-like, shape = [n_ts]
+        X : array-like, shape = [n_ts, ]
             The training input timeseries. Each timeseries must be an array,
             but the lengths can be variable
 
@@ -188,6 +187,7 @@ class GeneticExtractor():
             return np.array(shaps)
 
         def create_individual(n_shapelets=None):
+            """ Generate a random shapelet set """
             if n_shapelets is None:
                 n_shapelets = np.random.randint(2, int(np.sqrt(X.shape[1])) + 1)
             
@@ -202,28 +202,23 @@ class GeneticExtractor():
 
 
         def cost(shapelets):
-            """
-            .
-            """
+            """ Calculate the fitness of an individual/shapelet set"""
             start = time.time()
             D = np.zeros((len(X), len(shapelets)))
             for k in range(len(X)):
                 ts = X[k, :]
                 for j in range(len(shapelets)):
-                    # TODO make normalization a hyper-parameter
-                    dist = util.sdist_no_norm(shapelets[j].flatten(), ts)
+                    if self.normed:
+                        dist = util.sdist(shapelets[j].flatten(), ts)
+                    else:
+                        dist = util.sdist_no_norm(shapelets[j].flatten(), ts)
                     D[k, j] = dist
 
                 
             lr = LogisticRegression()
-            cv_score = -log_loss(
-                y, 
-                cross_val_predict(
-                    lr, X, y, method='predict_proba', 
-                    cv=StratifiedKFold(n_splits=3, shuffle=True, 
-                                       random_state=1337)
-                )
-            )
+            skf = StratifiedKFold(n_splits=3, shuffle=True, random_state=1337)
+            preds = cross_val_predict(lr, X, y, method='predict_proba', cv=skf) 
+            cv_score = -log_loss(y, preds)
 
             return (cv_score, sum([len(x) for x in shapelets]))
 
@@ -250,7 +245,7 @@ class GeneticExtractor():
             return shapelets,
 
         def merge_crossover(ind1, ind2):
-            """ """
+            """ Merge shapelets from one set with shapelets from the other """
             # Construct a pairwise similarity matrix using GAK
             _all = list(ind1) + list(ind2)
             similarity_matrix = cdist_gak(ind1, ind2, sigma=sigma_gak(_all))
@@ -284,7 +279,7 @@ class GeneticExtractor():
             return ind1, ind2
 
         def point_crossover(ind1, ind2):
-            """ """
+            """ Apply one- or two-point crossover on the shapelet sets """
             if len(ind1) > 1 and len(ind2) > 1:
                 if np.random.random() < 0.5:
                     ind1, ind2 = tools.cxOnePoint(list(ind1), list(ind2))
@@ -292,9 +287,6 @@ class GeneticExtractor():
                     ind1, ind2 = tools.cxTwoPoint(list(ind1), list(ind2))
             
             return ind1, ind2
-
-        # TODO: Make a comment why this is here
-        # set_config(assume_finite=True)
 
         # Register all operations in the toolbox
         toolbox = base.Toolbox()
@@ -427,7 +419,6 @@ class GeneticExtractor():
 
             it += 1
 
-        # TODO: Do not return anything but store everything in attributes!
         self.shapelets = np.array(best_ind)
 
     def transform(self, X):
@@ -437,7 +428,7 @@ class GeneticExtractor():
 
         Parameters
         ----------
-        X : array-like, shape = [n_ts]
+        X : array-like, shape = [n_ts, ]
             The training input timeseries. Each timeseries must be an array,
             but the lengths can be variable
 
@@ -456,8 +447,11 @@ class GeneticExtractor():
         D = np.zeros((len(X), len(self.shapelets)))
         for smpl_idx, sample in enumerate(X):
             for shap_idx, shapelet in enumerate(self.shapelets):
-                distance = util.sdist_no_norm(shapelet.flatten(), sample)
-                D[smpl_idx, shap_idx] = distance
+                if self.normed:
+                    dist = util.sdist(shapelet.flatten(), sample)
+                else:
+                    dist = util.sdist_no_norm(shapelet.flatten(), sample)
+                D[smpl_idx, shap_idx] = dist
 
         return D
 
@@ -466,7 +460,7 @@ class GeneticExtractor():
 
         Parameters
         ----------
-        X : array-like, shape = [n_ts]
+        X : array-like, shape = [n_ts, ]
             The training input timeseries. Each timeseries must be an array,
             but the lengths can be variable
 
