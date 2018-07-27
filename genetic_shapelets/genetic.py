@@ -1,96 +1,108 @@
+# Standard lib
+from collections import defaultdict, Counter
+import array
+import time
+
+# "Standard" data science libs
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# Motif extraction
+from mstamp_stomp import mstamp as mstamp_stomp
+
+# Evolutionary algorithms framework
+from deap import base, creator, algorithms, tools
+
+# Time series operations
+from tslearn.clustering import TimeSeriesKMeans
+from tslearn.metrics import sigma_gak, cdist_gak
+from tslearn.clustering import GlobalAlignmentKernelKMeans
+from tslearn.barycenters import euclidean_barycenter
+
+# Parallelization
+from pathos.multiprocessing import ProcessingPool as Pool
+
+# ML
+from sklearn.utils import check_array
+from sklearn.utils.validation import check_is_fitted
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import StratifiedKFold, cross_val_predict
+from sklearn.metrics import log_loss
+
+# Util functions
+import util
+
+# Ignore warnings
+import warnings; warnings.filterwarnings('ignore')
+
 class GeneticExtractor():
     """Feature selection with genetic algorithm.
 
     Parameters
     ----------
-    estimator : object
-        A supervised learning estimator with a `fit` method.
+    population_size : int
+        The number of individuals in our population. Increasing this parameter
+        increases both the runtime per generation, as the probability of
+        finding a good solution.
 
-    cv : int, cross-validation generator or an iterable, optional
-        Determines the cross-validation splitting strategy.
-        Possible inputs for cv are:
-        - None, to use the default 3-fold cross-validation,
-        - integer, to specify the number of folds.
-        - An object to be used as a cross-validation generator.
-        - An iterable yielding train/test splits.
-        For integer/None inputs, if ``y`` is binary or multiclass,
-        :class:`StratifiedKFold` used. If the estimator is a classifier
-        or if ``y`` is neither binary nor multiclass, :class:`KFold` is used.
-        Refer :ref:`User Guide <cross_validation>` for the various
-        cross-validation strategies that can be used here.
+    iterations : int
+        The maximum number of generations the algorithm may run.
 
-    scoring : string, callable or None, optional, default: None
-        A string (see model evaluation documentation) or
-        a scorer callable object / function with signature
-        ``scorer(estimator, X, y)``.
+    add_noise_prob : float
+        The chance that gaussian noise is added to a random shapelet from a
+        random individual every generation
 
-    fit_params : dict, optional
-        Parameters to pass to the fit method.
+    add_shapelet_prob : float
+        The chance that a shapelet is added to a random shapelet set every gen
 
-    verbose : int, default=0
-        Controls verbosity of output.
+    remove_shapelet_prob : float
+        The chance that a shapelet is deleted to a random shapelet set every gen
 
-    n_jobs : int, default 1
-        Number of cores to run in parallel.
-        Defaults to 1 core. If `n_jobs=-1`, then number of jobs is set
-        to number of cores.
+    crossover_prob : float
+        The chance that of crossing over two shapelet sets every generation
 
-    n_population : int, default=300
-        Number of population for the genetic algorithm.
+    normed : boolean
+        Whether we first have to normalize before calculating distances
 
-    crossover_proba : float, default=0.5
-        Probability of crossover for the genetic algorithm.
+    n_jobs : int
+        The number of threads to use
 
-    mutation_proba : float, default=0.2
-        Probability of mutation for the genetic algorithm.
+    verbose : boolean
+        Whether to print some statistics in every generation
 
-    n_generations : int, default=40
-        Number of generations for the genetic algorithm.
-
-    crossover_independent_proba : float, default=0.1
-        Independent probability of crossover for the genetic algorithm.
-
-    mutation_independent_proba : float, default=0.05
-        Independent probability of mutation for the genetic algorithm.
-
-    tournament_size : int, default=3
-        Tournament size for the genetic algorithm.
-
-    caching : boolean, default=False
-        If True, scores of the genetic algorithm are cached.
+    plot : boolean
+        Whether to plot the individuals every generation (if the population 
+        size is smaller than or equal to 20), or to plot the fittest individual
 
     Attributes
     ----------
-    n_features_ : int
-        The number of selected features with cross-validation.
-
-    support_ : array of shape [n_features]
-        The mask of selected features.
-
-    generation_scores_ : array of shape [n_generations]
-        The maximum cross-validation score for each generation.
-
-    estimator_ : object
-        The external estimator fit on the reduced dataset.
+    shapelets : array-like
+        The fittest shapelet set after evolution
 
     Examples
     --------
-    An example showing genetic shapelet extraction:
+    An example showing genetic shapelet extraction on a simple dataset:
 
     >>> from tslearn.generators import random_walk_blobs
     >>> from genetic import GeneticExtractor
-    >>> X, y = random_walk_blobs(n_ts_per_blob=20, sz=64, d=2, n_blobs=2)
-    >>> extractor = GeneticExtractor()
-    >>> extractor.fit(X, y)
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> import numpy as np
+    >>> np.random.seed(1337)
+    >>> X, y = random_walk_blobs(n_ts_per_blob=20, sz=64, noise_level=0.1)
+    >>> X = np.reshape(X, (X.shape[0], X.shape[1]))
+    >>> extractor = GeneticExtractor(iterations=5, n_jobs=1, population_size=10)
+    >>> distances = extractor.fit_transform(X, y)
+    >>> lr = LogisticRegression()
+    >>> _ = lr.fit(distances, y)
+    >>> lr.score(distances, y)
+    1.0
 
     """
-    def __init__(self, population_size=25, iterations=50, verbose=True,
-                 add_noise_prob=0.3, add_shapelet_prob=0.3, wait=10, plot=True,
-                 remove_shapelet_prob=0.3, crossover_prob=0.66, n_jobs=4):
-        """
-
-        """
-        np.random.seed(1337)
+    def __init__(self, population_size=50, iterations=25, verbose=False, 
+                 normed=False, add_noise_prob=0.3, add_shapelet_prob=0.3, 
+                 wait=10, plot=False, remove_shapelet_prob=0.3, 
+                 crossover_prob=0.66, n_jobs=4):
         self.population_size = population_size
         self.iterations = iterations
         self.verbose = verbose
@@ -102,19 +114,30 @@ class GeneticExtractor():
         self.wait = wait
         self.n_jobs = n_jobs
 
-
-    def fit(self, ts, labels):
-        """Fit the GeneticSelectionCV model and then the underlying estimator on the selected
-           features.
+    def fit(self, X, y):
+        """Extract shapelets from the provided timeseries and labels.
 
         Parameters
         ----------
-        ts : array-like, shape = [n_ts]
-            The training input timeseries. 
+        X : array-like, shape = [n_ts]
+            The training input timeseries. Each timeseries must be an array,
+            but the lengths can be variable
 
-        labels : array-like, shape = [n_samples]
+        y : array-like, shape = [n_samples]
             The target values.
         """
+        # If y is a 1D list, convert it to a 2D column np array
+        if type(y) is list or len(y.shape) == 1:
+            y = np.reshape(y, (-1, 1))
+
+        # Sci-kit learn checks
+        check_array(X)
+        check_array(y)
+
+        # Determine the minimum and maximum shapelet length
+        min_len = 4
+        max_len = min([len(x) for x in X])
+
         # We will try to maximize the negative logloss of LR in CV.
         # In the case of ties, we pick the one with least number of shapelets
         weights = (1.0, -1.0)
@@ -127,15 +150,15 @@ class GeneticExtractor():
             """Extract a random subseries from the training set"""
             shaps = []
             for _ in range(n_shapelets):
-                rand_row = np.random.randint(ts.shape[0])
-                rand_length = np.random.randint(self.min_len, self.max_len)
-                rand_col = np.random.randint(ts.shape[1] - rand_length)
-                shaps.append(ts[rand_row, rand_col:rand_col+rand_length])
-            return shaps
+                rand_row = np.random.randint(X.shape[0])
+                rand_length = np.random.randint(min_len, max_len)
+                rand_col = np.random.randint(X.shape[1] - rand_length)
+                shaps.append(X[rand_row, rand_col:rand_col+rand_length])
+            return np.array(shaps)
 
-        def kmeans(n_shapelets, shp_len, n_draw=2500):
+        def kmeans(n_shapelets, shp_len, n_draw=1000):
             """Sample subseries from the timeseries and apply K-Means on them"""
-            # Sample a `n_draw` subseries of length `shp_len`
+            # Sample `n_draw` subseries of length `shp_len`
             n_ts, sz = X.shape
             indices_ts = np.random.choice(n_ts, size=n_draw, replace=True)
             start_idx = np.random.choice(sz - shp_len + 1, size=n_draw, 
@@ -144,30 +167,33 @@ class GeneticExtractor():
 
             subseries = np.zeros((n_draw, shp_len))
             for i in range(n_draw):
-                subseries[i] = X[indices_ts[i], start_idx:end_idx]
+                subseries[i] = X[indices_ts[i], start_idx[i]:end_idx[i]]
 
             tskm = TimeSeriesKMeans(n_clusters=n_shapelets, metric="euclidean", 
                                     verbose=False)
             return tskm.fit(subseries).cluster_centers_
 
-        def motif(n_shapelets, n_draw=2500):
+        def motif(n_shapelets, n_draw=100):
             """Extract some motifs from sampled timeseries"""
             shaps = []
             for _ in range(n_shapelets):
-                rand_length = np.random.randint(self.min_len, self.max_len)
-                subset_idx = np.random.choice(range(len(ts)), 
-                                              size=int(0.75*len(ts)), 
+                rand_length = np.random.randint(min_len, max_len)
+                subset_idx = np.random.choice(range(len(X)), 
+                                              size=n_draw, 
                                               replace=True)
-                ts = ts[subset_idx, :].flatten()
+                ts = X[subset_idx, :].flatten()
                 matrix_profile, _ = mstamp_stomp(ts, rand_length)
                 motif_idx = matrix_profile[0, :].argsort()[-1]
                 shaps.append(ts[motif_idx:motif_idx + rand_length])
-            return shaps
+            return np.array(shaps)
 
-        def create_individual(n_shapelets=1):
+        def create_individual(n_shapelets=None):
+            if n_shapelets is None:
+                n_shapelets = np.random.randint(2, int(np.sqrt(X.shape[1])) + 1)
+            
             rand = np.random.random()
             if rand < 1./3.:
-                rand_length = np.random.randint(self.min_len, self.max_len)
+                rand_length = np.random.randint(min_len, max_len)
                 return kmeans(n_shapelets, rand_length)
             elif 1./3. < rand < 2./3.:
                 return motif(n_shapelets)
@@ -180,19 +206,20 @@ class GeneticExtractor():
             .
             """
             start = time.time()
-            X = np.zeros((len(ts), len(shapelets)))
-            for k in range(len(ts)):
-                D = ts[k, :]
+            D = np.zeros((len(X), len(shapelets)))
+            for k in range(len(X)):
+                ts = X[k, :]
                 for j in range(len(shapelets)):
-                    dist = util.sdist_no_norm(shapelets[j].flatten(), D)
-                    X[k, j] = dist
+                    # TODO make normalization a hyper-parameter
+                    dist = util.sdist_no_norm(shapelets[j].flatten(), ts)
+                    D[k, j] = dist
 
                 
             lr = LogisticRegression()
             cv_score = -log_loss(
-                self.labels, 
+                y, 
                 cross_val_predict(
-                    lr, X, self.labels, method='predict_proba', 
+                    lr, X, y, method='predict_proba', 
                     cv=StratifiedKFold(n_splits=3, shuffle=True, 
                                        random_state=1337)
                 )
@@ -210,7 +237,7 @@ class GeneticExtractor():
 
         def add_shapelet(shapelets):
             """Add a shapelet to the individual"""
-            shapelets.append(create_individual(n_shaps=1))
+            shapelets.append(create_individual(n_shapelets=1))
 
             return shapelets,
 
@@ -267,7 +294,7 @@ class GeneticExtractor():
             return ind1, ind2
 
         # TODO: Make a comment why this is here
-        set_config(assume_finite=True)
+        # set_config(assume_finite=True)
 
         # Register all operations in the toolbox
         toolbox = base.Toolbox()
@@ -400,10 +427,66 @@ class GeneticExtractor():
 
             it += 1
 
-        return best_ind
+        # TODO: Do not return anything but store everything in attributes!
+        self.shapelets = np.array(best_ind)
 
-    def transform(self, ts):
-        pass
+    def transform(self, X):
+        """After fitting the Extractor, we can transform collections of 
+        timeseries in matrices with distances to each of the shapelets in
+        the evolved shapelet set.
 
-    def fit_transform(self, ts, labels):
-        pass
+        Parameters
+        ----------
+        X : array-like, shape = [n_ts]
+            The training input timeseries. Each timeseries must be an array,
+            but the lengths can be variable
+
+        Returns
+        -------
+        D : array-like, shape = [n_ts, n_shaps]
+            The matrix with distances
+        """
+        # Check is fit had been called
+        check_is_fitted(self, ['shapelets'])
+
+        # Input validation
+        check_array(X)
+
+        # Construct (|X| x |S|) distance matrix
+        D = np.zeros((len(X), len(self.shapelets)))
+        for smpl_idx, sample in enumerate(X):
+            for shap_idx, shapelet in enumerate(self.shapelets):
+                distance = util.sdist_no_norm(shapelet.flatten(), sample)
+                D[smpl_idx, shap_idx] = distance
+
+        return D
+
+    def fit_transform(self, X, y):
+        """Combine both the fit and transform method in one.
+
+        Parameters
+        ----------
+        X : array-like, shape = [n_ts]
+            The training input timeseries. Each timeseries must be an array,
+            but the lengths can be variable
+
+        y : array-like, shape = [n_samples]
+            The target values.
+
+        Returns
+        -------
+        D : array-like, shape = [n_ts, n_shaps]
+            The matrix with distances
+        """
+        # If y is a 1D list, convert it to a 2D column np array
+        if type(y) is list or len(y.shape) == 1:
+            y = np.reshape(y, (-1, 1))
+
+        # Input validation
+        check_array(X)
+        check_array(y)
+        
+        # First call fit, then transform
+        self.fit(X, y)
+        D = self.transform(X)
+        return D
