@@ -1,10 +1,10 @@
 import numpy as np
 import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import util
+import other_util
 import pickle
 from scipy.stats import norm
-import util
+import other_util
 from collections import Counter, defaultdict
 from tqdm import trange
 
@@ -150,7 +150,7 @@ class SAXExtractor():
         return score_table
 
     def extract(self, timeseries, labels, min_len=None, max_len=None, 
-                nr_shapelets=1, metric=util.calculate_ig):
+                nr_shapelets=1, metric=other_util.calculate_ig):
         if min_len is None:
             min_len = sax_length
         if max_len is None:
@@ -174,7 +174,7 @@ class SAXExtractor():
                 # with shift=1
                 subseries = []
                 for k in range(len(ts) - l + 1):
-                    subseries.append(util.z_norm(ts[k:k+l]))
+                    subseries.append(other_util.z_norm(ts[k:k+l]))
                 # Transform all the subseries and add them to the sax_words
                 transformed_timeseries = transform(subseries, self.sax_length, 
                                                    self.alphabet_size)
@@ -214,7 +214,7 @@ class SAXExtractor():
                 L = []  # The orderline, to calculate entropy
                 for k in range(len(timeseries)):
                     D = timeseries[k, :]
-                    dist = util.sdist(candidate, D)
+                    dist = other_util.sdist(candidate, D)
                     L.append((dist, labels[k]))
                 score = metric(L)
                 shapelets.append(([list(candidate)] + list(score) + [ts_idx, sax_idx, l]))

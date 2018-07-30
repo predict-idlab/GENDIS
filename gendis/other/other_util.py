@@ -111,6 +111,19 @@ def pearson_dist_metrics(u, v, l, S_x, S_x2, S_y, S_y2, M):
     return np.sqrt(2 * (1 - pearson_metrics(u, v, l, S_x, S_x2, S_y, S_y2, M)))
 
 
+def sdist_no_norm(x, y):
+    """No value normalization and no length normalization is applied
+    >>> np.around(sdist_no_norm([1, 1, 1, 1, 1], [0, 0, 0]), 5)
+    1.73205
+    """
+    if len(y) < len(x): return sdist_no_norm(y, x)
+    min_dist = np.inf
+    for j in range(len(y) - len(x) + 1):
+        dist = euclidean(x, y[j:j+len(x)])
+        min_dist = min(dist, min_dist)
+    return min_dist 
+    
+
 def sdist_metrics(u, l, S_x, S_x2, S_y, S_y2, M):
     min_dist = np.inf
     for v in range(len(S_y) - l):

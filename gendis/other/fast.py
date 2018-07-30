@@ -1,4 +1,4 @@
-import util
+import other_util
 from tqdm import trange
 
 class LRUCache():
@@ -18,7 +18,7 @@ class FastExtractor():
         self.cache_size = cache_size
 
     def extract(self, timeseries, labels, min_len=None, max_len=None, 
-                nr_shapelets=1, metric=util.calculate_ig):
+                nr_shapelets=1, metric=other_util.calculate_ig):
         if min_len is None:
             min_len = 4
         if max_len is None:
@@ -31,7 +31,7 @@ class FastExtractor():
             # Pre-compute all metric arrays, which will allow us to
             # calculate the distance between two timeseries in constant time
             for k in range(len(timeseries)):
-                metrics = util.calculate_metric_arrays(S, timeseries[k, :])
+                metrics = other_util.calculate_metric_arrays(S, timeseries[k, :])
                 stats[(j, k)] = metrics
 
             for l in range(min_len, max_len):  
@@ -45,8 +45,8 @@ class FastExtractor():
                         prune = False
                         for w in range(len(H.values)):
                             L_prime, S_prime = H.values[w]
-                            R = util.sdist(S[i:i+l], S_prime)
-                            if util.upper_ig(L_prime.copy(), R) < max_gain:
+                            R = other_util.sdist(S[i:i+l], S_prime)
+                            if other_util.upper_ig(L_prime.copy(), R) < max_gain:
                                 prune = True
                                 break
                         if prune: continue
@@ -56,7 +56,7 @@ class FastExtractor():
                     for k in range(len(timeseries)):
                         S_x, S_x2, S_y, S_y2, M = stats[(j, k)]
                         L.append((
-                            util.sdist_metrics(i, l, S_x, S_x2, S_y, S_y2, M),
+                            other_util.sdist_metrics(i, l, S_x, S_x2, S_y, S_y2, M),
                             labels[k]
                         ))
                     score = metric(L)

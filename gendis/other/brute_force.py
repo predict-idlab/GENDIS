@@ -1,4 +1,4 @@
-import util
+import other_util
 from tqdm import trange
 
 
@@ -7,7 +7,7 @@ class BruteForceExtractor():
         pass
 
     def extract(self, timeseries, labels, min_len=None, max_len=None, 
-                nr_shapelets=1, metric=util.calculate_ig):
+                nr_shapelets=1, metric=other_util.calculate_ig):
         if min_len is None:
             min_len = 4
         if max_len is None:
@@ -24,7 +24,7 @@ class BruteForceExtractor():
                     L = []  # The orderline, to calculate entropy, only for IG
                     for k in range(len(timeseries)):
                         D = timeseries[k, :]
-                        dist = util.sdist(candidate, D)
+                        dist = other_util.sdist(candidate, D)
                         L.append((dist, labels[k]))
                     score = metric(L)
                     shapelets.append((list(candidate), list(score), [j, i, l]))

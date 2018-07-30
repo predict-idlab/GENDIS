@@ -1,4 +1,4 @@
-import util
+import other_util
 import numpy as np
 from deap import base, creator, algorithms, tools
 
@@ -15,7 +15,7 @@ class ParticleSwarmExtractor():
         self.phi2 = phi2
 
     def extract(self, timeseries, labels, min_len=None, max_len=None, 
-                nr_shapelets=1, metric=util.calculate_ig):
+                nr_shapelets=1, metric=other_util.calculate_ig):
         if min_len is None:
             min_len = 4
         if max_len is None:
@@ -46,14 +46,14 @@ class ParticleSwarmExtractor():
             u2 = np.random.uniform(0, phi2, len(part))
             #TODO: recheck this out (what if particles have variable lengths??)
             if len(part) < len(best):
-                d, pos = util.sdist_with_pos(part, best)
+                d, pos = other_util.sdist_with_pos(part, best)
                 v_u1 = u1 * (part.best - part)
                 v_u2 = u2 * (best[pos:pos+len(part)] - part)
                 # These magic numbers are found in http://www.ijmlc.org/vol5/521-C016.pdf
                 part.speed = 0.729*part.speed + np.minimum(np.maximum(1.49445 * (v_u1 + v_u2), part.smin), part.smax)
                 part += part.speed
             else:
-                d, pos = util.sdist_with_pos(best, part)
+                d, pos = other_util.sdist_with_pos(best, part)
                 v_u1 = (u1 * (part.best - part))[pos:pos+len(best)]
                 v_u2 = u2[pos:pos+len(best)] * (best - part[pos:pos+len(best)])
                 # These magic numbers are found in http://www.ijmlc.org/vol5/521-C016.pdf
@@ -65,7 +65,7 @@ class ParticleSwarmExtractor():
             L = []
             for k in range(len(timeseries)):
                 D = timeseries[k, :]
-                dist = util.sdist(shapelet, D)
+                dist = other_util.sdist(shapelet, D)
                 L.append((dist, labels[k]))
             return metric(L)
 

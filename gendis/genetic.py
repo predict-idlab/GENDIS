@@ -351,7 +351,7 @@ class GeneticExtractor():
                 f, ax = plt.subplots(4, height, sharex=True)
             else:
                 plt.figure(figsize=(15, 5))
-                plt.xlim([0, len(timeseries[0])])
+                plt.xlim([0, len(X[0])])
 
         # The genetic algorithm starts here
         while it <= self.iterations and it - best_it < self.wait:
