@@ -8,6 +8,11 @@ class BruteForceExtractor():
 
     def extract(self, timeseries, labels, min_len=None, max_len=None, 
                 nr_shapelets=1, metric=util.calculate_ig):
+        if min_len is None:
+            min_len = 4
+        if max_len is None:
+            max_len = timeseries.shape[1]
+
         shapelets = []
         for j in trange(len(timeseries), desc='timeseries', position=0):
             # We will extract shapelet candidates from S
@@ -24,6 +29,6 @@ class BruteForceExtractor():
                     score = metric(L)
                     shapelets.append((list(candidate), list(score), [j, i, l]))
 
-        shapelets = sorted(shapelets, key=key)
+        shapelets = sorted(shapelets, key=lambda x: x[1:], reverse=True)
         best_shapelets = [x[0] for x in shapelets[:nr_shapelets]]
         return best_shapelets

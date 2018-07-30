@@ -5,7 +5,8 @@ import util
 import pickle
 from scipy.stats import norm
 import util
-
+from collections import Counter, defaultdict
+from tqdm import trange
 
 def calculate_breakpoints(n):
     """Calculate the n-1 different points in [-1, 1] which are the boundaries
@@ -149,27 +150,26 @@ class SAXExtractor():
         return score_table
 
     def extract(self, timeseries, labels, min_len=None, max_len=None, 
-                nr_shapelets=1, metric='ig'):
-        super(SAXExtractor, self).extract(timeseries, labels, min_len,
-                                          max_len, nr_shapelets, metric)
+                nr_shapelets=1, metric=util.calculate_ig):
+        if min_len is None:
+            min_len = sax_length
+        if max_len is None:
+            max_len = timeseries.shape[1]
 
-        if self.min_len == 1:
-            self.min_len = self.sax_length
-
-        unique_classes = set(self.labels)
-        classes_cntr = Counter(self.labels)
+        unique_classes = set(labels)
+        classes_cntr = Counter(labels)
 
         shapelets = []
-        for l in trange(self.min_len, self.max_len, desc='length', position=0):
+        for l in trange(min_len, max_len, desc='length', position=0):
             # To select the candidates, all subsequences of length l from   
             # all time series are created using the sliding window technique, 
             # and we create their corresponding SAX word and keep them in SAXList 
             sax_words = np.zeros((
-                len(self.timeseries), 
-                self.timeseries.shape[1] - l + 1,
+                len(timeseries), 
+                timeseries.shape[1] - l + 1,
                 self.sax_length
             ))
-            for ts_idx, ts in enumerate(self.timeseries):
+            for ts_idx, ts in enumerate(timeseries):
                 # Extract all possible subseries, by using a sliding window
                 # with shift=1
                 subseries = []
@@ -180,7 +180,7 @@ class SAXExtractor():
                                                    self.alphabet_size)
                 sax_words[ts_idx] = transformed_timeseries
             
-            score_table = self._create_score_table(sax_words, self.labels, 
+            score_table = self._create_score_table(sax_words, labels, 
                                                    iterations=self.iterations,
                                                    mask_size=self.mask_size)
             max_score_table = np.ones_like(score_table)
@@ -210,15 +210,15 @@ class SAXExtractor():
             
             top_candidates = sorted(power, key=lambda x: -x[0])[:self.nr_candidates]
             for score, (ts_idx, sax_idx) in top_candidates:
-                candidate = self.timeseries[ts_idx][sax_idx:sax_idx+l]
+                candidate = timeseries[ts_idx][sax_idx:sax_idx+l]
                 L = []  # The orderline, to calculate entropy
-                for k in range(len(self.timeseries)):
-                    D = self.timeseries[k, :]
+                for k in range(len(timeseries)):
+                    D = timeseries[k, :]
                     dist = util.sdist(candidate, D)
-                    L.append((dist, self.labels[k]))
-                score = self.metric(L)
+                    L.append((dist, labels[k]))
+                score = metric(L)
                 shapelets.append(([list(candidate)] + list(score) + [ts_idx, sax_idx, l]))
 
-        shapelets = sorted(shapelets, key=self.key)
-        best_shapelets = extract_top_k_shapelets(shapelets, nr_shapelets, self.key)
+        shapelets = sorted(shapelets, key=lambda x: x[1:], reverse=True)
+        best_shapelets = [x[0] for x in shapelets[:nr_shapelets]]
         return best_shapelets

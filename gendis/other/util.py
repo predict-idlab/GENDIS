@@ -1,5 +1,14 @@
 import numpy as np
-from scipy.spatial.distance import euclidean
+import pandas as pd
+from scipy.stats import (zscore, pearsonr, entropy,
+                         kruskal, f_oneway, median_test)
+import time
+from collections import Counter, defaultdict
+from sklearn.feature_selection import mutual_info_classif
+import math
+
+from sklearn.neighbors import KDTree, BallTree
+from scipy.spatial.distance import pdist, euclidean
 
 
 def z_norm(x):
@@ -85,14 +94,6 @@ def calculate_metric_arrays(x, y):
     return S_x, S_x2, S_y, S_y2, M
 
 
-def sdist_metrics(u, l, S_x, S_x2, S_y, S_y2, M):
-    min_dist = np.inf
-    for v in range(len(S_y) - l):
-        dist = pearson_dist_metrics(u, v, l, S_x, S_x2, S_y, S_y2, M)
-        min_dist = min(dist, min_dist)
-    return min_dist
-
-
 def pearson_metrics(u, v, l, S_x, S_x2, S_y, S_y2, M):
     """Calculate the correlation between two time series. Calculate
     the mean and standard deviations by using the statistic arrays."""
@@ -104,6 +105,32 @@ def pearson_metrics(u, v, l, S_x, S_x2, S_y, S_y2, M):
     if sigma_x == 0 or pd.isnull(sigma_x): sigma_x = 1
     if sigma_y == 0 or pd.isnull(sigma_y): sigma_y = 1
     return min(1, (xy - (l * mu_x * mu_y)) / (l * sigma_x * sigma_y))
+
+
+def pearson_dist_metrics(u, v, l, S_x, S_x2, S_y, S_y2, M):
+    return np.sqrt(2 * (1 - pearson_metrics(u, v, l, S_x, S_x2, S_y, S_y2, M)))
+
+
+def sdist_metrics(u, l, S_x, S_x2, S_y, S_y2, M):
+    min_dist = np.inf
+    for v in range(len(S_y) - l):
+        dist = pearson_dist_metrics(u, v, l, S_x, S_x2, S_y, S_y2, M)
+        min_dist = min(dist, min_dist)
+    return min_dist
+
+
+def sdist_with_pos(x, y):
+    if len(y) < len(x): return sdist_with_pos(y, x)
+    min_dist = np.inf
+    norm_x = z_norm(x)
+    best_pos = 0
+    for j in range(len(y) - len(x) + 1):
+        norm_y = z_norm(y[j:j+len(x)])
+        dist = euclidean(norm_x, norm_y)
+        if dist < min_dist:
+            min_dist = dist
+            best_pos = j
+    return min_dist, best_pos
 
 
 def information_gain(prior_entropy, left_counts, right_counts):
@@ -154,3 +181,85 @@ def calculate_ig(L):
             max_tau, max_gain, max_gap = tau, ig, g
 
     return (max_gain, max_gap)
+
+
+def class_scatter_matrix(X, y):
+    # Works faster than Linear Regression and correlates well with predictive performance (e.g. accuracy)
+    # FROM: https://datascience.stackexchange.com/questions/11554/varying-results-when-calculating-scatter-matrices-for-lda
+    # Construct a mean vector per class
+    mean_vecs = {}
+    for label in set(y):
+        mean_vecs[label] = np.mean(X[y==label], axis=0)
+        
+    # Construct the within class matrix (S_w)
+    d = X.shape[1]
+    S_w = np.zeros((d, d))
+    for label, mv in zip(set(y), mean_vecs):
+        class_scatter = np.cov(X[y==label].T)
+        S_w += class_scatter
+        
+    # Construct an overall mean vector
+    mean_overall = np.mean(X, axis=0)
+    
+    # Construct the between class matrix (S_b)
+    S_b = np.zeros((d, d))
+    for i in mean_vecs:
+        mean_vec = mean_vecs[i]
+        n = X[y==i, :].shape[0]
+        mean_vec = mean_vec.reshape(d, 1)
+        mean_overall = mean_overall.reshape(d, 1)
+        S_b += n * (mean_vec - mean_overall).dot((mean_vec - mean_overall).T)
+        
+    return np.trace(S_b) / np.trace(S_w + S_b)
+
+
+def bhattacharyya(X, y, cells_per_dim=10):
+    # Calculate lower and upper bound for each dimension
+    bounds = {}
+    widths = {}
+    col_to_del = []
+    cntr = 0
+    for d in range(X.shape[1]):
+        mi, ma = min(X[:, d]), max(X[:, d])
+        if (ma - mi) < 1e-5:
+            col_to_del.append(d)
+        else:
+            bounds[cntr] = (mi, ma)
+            widths[cntr] = (ma - mi) / cells_per_dim
+            cntr += 1
+    
+    X = np.delete(X, col_to_del, axis=1)
+    #print(X, col_to_del)
+
+    if X.shape[1] == 0:
+        return 1
+            
+    # For each datapoint, calculate its cell in the hypercube
+    cell_assignment_counts = []
+    label_to_idx = {}
+    for i, l in enumerate(set(y)): 
+        cell_assignment_counts.append(defaultdict(int))
+        label_to_idx[l] = i
+        
+    unique_assignments = set()
+    for point_idx, l in zip(range(X.shape[0]), y):
+        assignment = []
+        for dim_idx in range(X.shape[1]):
+            val = X[point_idx, dim_idx]
+            cell = (val - bounds[dim_idx][0])//widths[dim_idx]
+            assignment.append(cell)
+        cell_assignment_counts[label_to_idx[l]][tuple(assignment)] += 1
+        unique_assignments.add(tuple(assignment))
+        
+    totals = {}
+    for l in set(y):
+        totals[l] = sum(cell_assignment_counts[label_to_idx[l]].values())
+    
+    dist = 0
+    for assign in unique_assignments:
+        temp = 1
+        for l in set(y):
+            temp *= cell_assignment_counts[label_to_idx[l]][assign] / totals[l]
+        dist += (temp * (temp != 1)) ** (1 / len(totals))
+    
+    return dist

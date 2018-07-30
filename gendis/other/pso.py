@@ -1,3 +1,7 @@
+import util
+import numpy as np
+from deap import base, creator, algorithms, tools
+
 class ParticleSwarmExtractor():
     def __init__(self, particles=50, iterations=25, verbose=True, wait=5,
                  smin=-0.25, smax=0.25, phi1=1, phi2=1):
@@ -11,12 +15,17 @@ class ParticleSwarmExtractor():
         self.phi2 = phi2
 
     def extract(self, timeseries, labels, min_len=None, max_len=None, 
-                nr_shapelets=1, metric='ig'):
+                nr_shapelets=1, metric=util.calculate_ig):
+        if min_len is None:
+            min_len = 4
+        if max_len is None:
+            max_len = timeseries.shape[1]
+
         def random_shapelet():
-            rand_row_idx = np.random.randint(self.timeseries.shape[0])
-            rand_length = np.random.choice(range(self.min_len, self.max_len))
-            rand_col_start_idx = np.random.randint(self.timeseries.shape[1] - rand_length)
-            return self.timeseries[
+            rand_row_idx = np.random.randint(timeseries.shape[0])
+            rand_length = np.random.choice(range(min_len, max_len))
+            rand_col_start_idx = np.random.randint(timeseries.shape[1] - rand_length)
+            return timeseries[
                 rand_row_idx, 
                 rand_col_start_idx:rand_col_start_idx+rand_length
             ]
@@ -54,11 +63,11 @@ class ParticleSwarmExtractor():
 
         def cost(shapelet):
             L = []
-            for k in range(len(self.timeseries)):
-                D = self.timeseries[k, :]
+            for k in range(len(timeseries)):
+                D = timeseries[k, :]
                 dist = util.sdist(shapelet, D)
-                L.append((dist, self.labels[k]))
-            return self.metric(L)
+                L.append((dist, labels[k]))
+            return metric(L)
 
         weights = (1.0,)
         if metric == 'ig':
@@ -94,7 +103,6 @@ class ParticleSwarmExtractor():
                     part.best = creator.Particle(part)
                     part.best.fitness.values = part.fitness.values
                 if best is None or best.fitness < part.fitness:
-                    print('--->', part.fitness)
                     best = creator.Particle(part)
                     best.fitness.values = part.fitness.values
                     it_wo_improvement = 0

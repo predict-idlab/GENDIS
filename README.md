@@ -8,9 +8,17 @@ This repository contains an implementation of `GENDIS`, an algorithm that search
 
 ## Example
 
+A simple example is provided in [this notebook](gendis/example.ipynb)
+
 ## Paper experiments
 
 In order to reproduce the results from the corresponding paper...
+
+### Dependent vs independent discovery
+
+### Simple artificial two-class problem that cannot be solved by brute-force approach
+
+### [LTS](https://www.ismll.uni-hildesheim.de/pub/pdfs/grabocka2014e-kdd.pdf) vs GENDIS
 
 ## Tests
 
