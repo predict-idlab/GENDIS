@@ -38,3 +38,4 @@ def sdist(x, y):
         dist = euclidean(norm_x, norm_y)
         min_dist = min(dist, min_dist)
     return min_dist
+

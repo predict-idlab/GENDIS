@@ -80,8 +80,8 @@ class GeneticExtractor():
     shapelets : array-like
         The fittest shapelet set after evolution
 
-    Examples
-    --------
+    Example
+    -------
     An example showing genetic shapelet extraction on a simple dataset:
 
     >>> from tslearn.generators import random_walk_blobs
@@ -100,7 +100,7 @@ class GeneticExtractor():
     """
     def __init__(self, population_size=50, iterations=25, verbose=False, 
                  normed=False, add_noise_prob=0.3, add_shapelet_prob=0.3, 
-                 wait=10, plot=False, remove_shapelet_prob=0.3, 
+                 wait=10, plot=None, remove_shapelet_prob=0.3, 
                  crossover_prob=0.66, n_jobs=4):
         self.population_size = population_size
         self.iterations = iterations
@@ -112,6 +112,7 @@ class GeneticExtractor():
         self.plot = plot
         self.wait = wait
         self.n_jobs = n_jobs
+        self.normed = normed
 
     def fit(self, X, y):
         """Extract shapelets from the provided timeseries and labels.
@@ -153,7 +154,10 @@ class GeneticExtractor():
                 rand_length = np.random.randint(min_len, max_len)
                 rand_col = np.random.randint(X.shape[1] - rand_length)
                 shaps.append(X[rand_row, rand_col:rand_col+rand_length])
-            return np.array(shaps)
+            if n_shapelets > 1:
+                return np.array(shaps)
+            else:
+                return np.array(shaps[0])
 
         def kmeans(n_shapelets, shp_len, n_draw=1000):
             """Sample subseries from the timeseries and apply K-Means on them"""
@@ -184,7 +188,10 @@ class GeneticExtractor():
                 matrix_profile, _ = mstamp_stomp(ts, rand_length)
                 motif_idx = matrix_profile[0, :].argsort()[-1]
                 shaps.append(ts[motif_idx:motif_idx + rand_length])
-            return np.array(shaps)
+            if n_shapelets > 1:
+                return np.array(shaps)
+            else:
+                return np.array(shaps[0])
 
         def create_individual(n_shapelets=None):
             """ Generate a random shapelet set """
@@ -192,13 +199,20 @@ class GeneticExtractor():
                 n_shapelets = np.random.randint(2, int(np.sqrt(X.shape[1])) + 1)
             
             rand = np.random.random()
-            if rand < 1./3.:
-                rand_length = np.random.randint(min_len, max_len)
-                return kmeans(n_shapelets, rand_length)
-            elif 1./3. < rand < 2./3.:
-                return motif(n_shapelets)
+            if n_shapelets > 1:
+                if rand < 1./3.:
+                    rand_length = np.random.randint(min_len, max_len)
+                    return kmeans(n_shapelets, rand_length)
+                elif 1./3. < rand < 2./3.:
+                    return motif(n_shapelets)
+                else:
+                    return random_shapelet(n_shapelets)
             else:
-                return random_shapelet(n_shapelets)
+                if rand < 0.5:
+                    return motif(n_shapelets)
+                else:
+                    return random_shapelet(n_shapelets)
+
 
 
         def cost(shapelets):
@@ -217,7 +231,7 @@ class GeneticExtractor():
                 
             lr = LogisticRegression()
             skf = StratifiedKFold(n_splits=3, shuffle=True, random_state=1337)
-            preds = cross_val_predict(lr, X, y, method='predict_proba', cv=skf) 
+            preds = cross_val_predict(lr, D, y, method='predict_proba', cv=skf) 
             cv_score = -log_loss(y, preds)
 
             return (cv_score, sum([len(x) for x in shapelets]))
@@ -262,7 +276,7 @@ class GeneticExtractor():
                     ts1 = list(ind1[row_idx]).copy()
                     ts2 = list(ind2[max_col_idx]).copy()
                     # Merge them and remove nans
-                    ind1[row_idx] = euclidean_barycenter([ts1, t2])
+                    ind1[row_idx] = euclidean_barycenter([ts1, ts2])
                     ind1[row_idx] = ind1[row_idx][~np.isnan(ind1[row_idx])]
 
             # Apply the same for the elements in ind2
@@ -273,7 +287,7 @@ class GeneticExtractor():
                     max_row_idx = np.argmax(non_equals)
                     ts1 = list(ind1[max_row_idx]).copy()
                     ts2 = list(ind2[col_idx]).copy()
-                    ind2[col_idx] = euclidean_barycenter([ts1, t2])
+                    ind2[col_idx] = euclidean_barycenter([ts1, ts2])
                     ind2[col_idx] = ind2[col_idx][~np.isnan(ind2[col_idx])]
 
             return ind1, ind2
@@ -317,8 +331,6 @@ class GeneticExtractor():
         stats.register("avg", np.mean)
         stats.register("std", np.std)
         stats.register("max", np.max)
-        if self.verbose:
-            print('it\t\tavg\t\tstd\t\tmax\t\ttime')
 
         # Initialize the population and calculate their initial fitness values
         pop = toolbox.population(n=self.population_size)
@@ -334,7 +346,7 @@ class GeneticExtractor():
 
         # Set up a matplotlib figure and set the axes
         height = int(np.ceil(self.population_size/4))
-        if self.plot:
+        if self.plot is not None and self.plot != 'notebook':
             if self.population_size <= 20:
                 f, ax = plt.subplots(4, height, sharex=True)
             else:
@@ -349,13 +361,17 @@ class GeneticExtractor():
             offspring = list(map(toolbox.clone, pop))
 
             # Plot the fittest individual of our population
-            if self.plot:
+            if self.plot is not None:
                 if self.population_size <= 20:
+                    if self.plot == 'notebook':
+                        f, ax = plt.subplots(4, height, sharex=True)
                     for ix, ind in enumerate(offspring):
                         ax[ix//height][ix%height].clear()
                         for s in ind:
                             ax[ix//height][ix%height].plot(range(len(s)), s)
                     plt.pause(0.001)
+                    if self.plot == 'notebook': 
+                        plt.show()
 
                 else:
                     plt.clf()
@@ -375,7 +391,7 @@ class GeneticExtractor():
                         del child1.fitness.values
                         del child2.fitness.values
                 except:
-                    pass
+                    raise
 
             # Apply mutation to each individual
             for idx, indiv in enumerate(offspring):
@@ -403,6 +419,8 @@ class GeneticExtractor():
 
             # Print our statistics
             if self.verbose:
+                if it == 1:
+                    print('it\t\tavg\t\tstd\t\tmax\t\ttime')
                 print('{}\t\t{}\t\t{}\t\t{}\t{}'.format(
                     it, 
                     np.around(it_stats['avg'], 4), 
@@ -419,7 +437,7 @@ class GeneticExtractor():
 
             it += 1
 
-        self.shapelets = np.array(best_ind)
+        self.shapelets = np.array(best_ind[0])
 
     def transform(self, X):
         """After fitting the Extractor, we can transform collections of 
