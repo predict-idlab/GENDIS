@@ -35,9 +35,9 @@ Construct the object. For a list of all possible parameters, and a description, 
 
 ```
 genetic_extractor = GeneticExtractor(population_size=50, iterations=25, verbose=False, 
-					                 normed=False, add_noise_prob=0.3, add_shapelet_prob=0.3, 
-					                 wait=10, plot='notebook', remove_shapelet_prob=0.3, 
-									 crossover_prob=0.66, n_jobs=4)
+                                     normed=False, add_noise_prob=0.3, add_shapelet_prob=0.3, 
+                                     wait=10, plot='notebook', remove_shapelet_prob=0.3, 
+                                     crossover_prob=0.66, n_jobs=4)
 ```
 
 ### 3. Fit the `GeneticExtractor` and construct distance matrix
@@ -58,7 +58,8 @@ print('Accuracy = {}'.format(accuracy_score(y_test, lr.predict(distances_test)))
 ```
 
 ### Example notebook
-	A simple example is provided in [this notebook](gendis/example.ipynb)
+
+A simple example is provided in [this notebook](gendis/example.ipynb)
 
 ## Data
 
@@ -80,6 +81,6 @@ In order to reproduce the results from the corresponding paper, we provide files
 
 We provide a few doctest. Deploy them by running `python3 -m doctest -v <FILE>`, where `<FILE>` is the Python file you want to run the doctests from.
 
-## Contributing, citing and Contact
+## Contributing, Citing and Contact
 
 For now, please refer to this repository. A paper, to which you can then refer, will be published in the nearby future. If you have any questions, are experiencing bugs in the GENDIS implementation, or would like to contribute, please feel free to create an issue in this repository or take contact with me at gilles(dot)vandewiele(at)ugent(dot)be

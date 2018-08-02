@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # Motif extraction
-from mstamp_stomp import mstamp as mstamp_stomp
+from gendis.mstamp_stomp import mstamp as mstamp_stomp
 
 # Evolutionary algorithms framework
 from deap import base, creator, algorithms, tools
@@ -31,7 +31,7 @@ from sklearn.model_selection import StratifiedKFold, cross_val_predict
 from sklearn.metrics import log_loss
 
 # Util functions
-import util
+import gendis.util
 
 # Ignore warnings
 import warnings; warnings.filterwarnings('ignore')
