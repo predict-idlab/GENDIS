@@ -1,12 +1,23 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
+from setuptools import setup
 
 setup(name='GENDIS',
-      version='1.0',
+      version='1.0.6',
       description=' Contains an implementation (sklearn API) of the algorithm proposed in "GENDIS: GEnetic DIscovery of Shapelets" and code to reproduce all experiments.',
       author='Gilles Vandewiele',
       author_email='gilles.vandewiele@ugent.be',
       url='https://github.com/IBCNServices/GENDIS',
       packages=['gendis'],
+      install_requires=[
+          'deap==1.2.2',
+		  'matplotlib==2.1.2',
+		  'numpy==1.14.5',
+		  'pandas==0.23.0',
+		  'pathos==0.2.2',
+		  'scipy==1.1.0',
+		  'sklearn==0.0',
+		  'tqdm==4.23.2',
+		  'tslearn==0.1.18.3'
+      ],
      )

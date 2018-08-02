@@ -6,6 +6,11 @@ This repository contains an implementation of `GENDIS`, an algorithm that search
 
 ## Installation
 
+Two alternatives:
+
+1. Clone the repository `https://github.com/IBCNServices/GENDIS.git` and run `(python3 -m) pip -r install requirements.txt`
+2. GENDIS is hosted on PyPi. You can just run `(python3 -m) pip install gendis` to add gendis to your dist-packages (you can use it from everywhere).
+
 ## Tutorial & Example
 
 ### 1. Loading & preprocessing the datasets
