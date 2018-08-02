@@ -82,6 +82,7 @@ def fit_genetic(X_train, y_train, X_test, y_test, shap_out_path, pred_out_path, 
     genetic_extractor = GeneticExtractor(verbose=True, population_size=50, iterations=50, wait=25)
     start = time.time()
     shapelets = genetic_extractor.fit(X_train, y_train)
+    genetic_time = time.time() - start
 
     print('Genetic shapelet discovery took {}s'.format(genetic_time))
 

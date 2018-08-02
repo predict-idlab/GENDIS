@@ -65,12 +65,14 @@ y = np.array([
 #   * brute-force (will not find optimal one)
 #   * genetic algorithm
 #   * learning time series shapelets
+
+ge = SingleGeneticExtractor(verbose=True, population_size=100, iterations=1000, wait=100)
+ge.fit(X, y)
+print(ge.shapelets)
+gen_shapelet = ge.shapelets[0]
+
 bfe = BruteForceExtractor()
 bf_shapelet = bfe.extract(X, y)[0]
-
-ge = SingleGeneticExtractor(verbose=True, population_size=125, iterations=250, wait=100, mutation_prob=0.66, crossover_prob=0.66)
-shapelets = ge.extract(X, y, metric=other_util.f_score)
-gen_shapelet = shapelets[0]
 
 clf = ShapeletModel(n_shapelets_per_size={len(ts1): 1}, 
                     max_iter=5000, verbose_level=0, batch_size=1,
