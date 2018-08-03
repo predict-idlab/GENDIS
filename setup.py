@@ -20,4 +20,5 @@ setup(name='GENDIS',
 		  'tqdm==4.23.2',
 		  'tslearn==0.1.18.3'
       ],
+      test_suite='nose2.collector.collector',
      )

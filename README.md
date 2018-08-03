@@ -1,4 +1,4 @@
-# GENDIS: GENetic DIscovery of Shapelets
+# GENDIS: GENetic DIscovery of Shapelets  [![PyPI version](https://badge.fury.io/py/GENDIS.svg)](https://badge.fury.io/py/GENDIS)
 
 In the time series classification domain, shapelets are small subseries that are discriminative for a certain class. It has been shown that by projecting the original dataset to a distance space, where each axis corresponds to the distance to a certain shapelet, classifiers are able to achieve state-of-the-art results on a plethora of datasets.
 
