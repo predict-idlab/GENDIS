@@ -16,7 +16,7 @@ We currently support Python 3.5 & Python 3.6. For installation, there are two al
 
 ### 1. Loading & preprocessing the datasets
 
-In a first step, we need to construct at least a matrix with timeseries (`X_train`) and a vector with labels (`y_train`). Additionally, test data can be loaded as well in order to evaluate the pipeline in the end. **It is important that the labels are in a range of [0, .., C-1], with C the number of classes.**
+In a first step, we need to construct at least a matrix with timeseries (`X_train`) and a vector with labels (`y_train`). Additionally, test data can be loaded as well in order to evaluate the pipeline in the end.
 
 ```python
 # Read in the datafiles
