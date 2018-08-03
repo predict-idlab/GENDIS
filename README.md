@@ -19,8 +19,8 @@ We currently support Python 3.5 & Python 3.6. For installation, there are two al
 In a first step, we need to construct at least a matrix with timeseries (`X_train`) and a vector with labels (`y_train`). Additionally, test data can be loaded as well in order to evaluate the pipeline in the end.
 
 ```python
-# Read in the datafiles
 import pandas as pd
+# Read in the datafiles
 train_df = pd.read_csv(<DATA_FILE>)
 test_df = pd.read_csv(<DATA_FILE>)
 # Split into feature matrices and label vectors
@@ -79,4 +79,4 @@ We provide a few doctests and unit tests. To run the doctests: `python3 -m docte
 
 ## Contributing, Citing and Contact
 
-For now, please refer to this repository. A paper, to which you can then refer, will be published in the nearby future. If you have any questions, are experiencing bugs in the GENDIS implementation, or would like to contribute, please feel free to create an issue in this repository or take contact with me at gilles(dot)vandewiele(at)ugent(dot)be
+For now, please refer to this repository. A paper, to which you can then refer, will be published in the nearby future. If you have any questions, are experiencing bugs in the GENDIS implementation, or would like to contribute, please feel free to create an issue/pull request in this repository or take contact with me at gilles(dot)vandewiele(at)ugent(dot)be
