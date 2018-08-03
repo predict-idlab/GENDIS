@@ -157,12 +157,13 @@ class GeneticExtractor():
         """
         X = self._convert_X(X)
         y = self._convert_y(y)
-
-        # Sci-kit learn check for label vector
-        # We allow variable-length feature vectors
-        check_array(y)
-
         self._min_length = min([len(x) for x in X])
+        
+        if self._min_length <= 4:
+            raise Exception('Time series should be of at least length 4!')
+
+        # Sci-kit learn check for label vector.
+        check_array(y)
 
         # We will try to maximize the negative logloss of LR in CV.
         # In the case of ties, we pick the one with least number of shapelets
@@ -215,7 +216,7 @@ class GeneticExtractor():
                     ts += list(X[idx].flatten())
                 matrix_profile, _ = mstamp_stomp(ts, rand_length)
                 motif_idx = matrix_profile[0, :].argsort()[-1]
-                shaps.append(ts[motif_idx:motif_idx + rand_length])
+                shaps.append(np.array(ts[motif_idx:motif_idx + rand_length]))
             if n_shapelets > 1:
                 return np.array(shaps)
             else:
@@ -241,8 +242,6 @@ class GeneticExtractor():
                     return motif(n_shapelets)
                 else:
                     return random_shapelet(n_shapelets)
-
-
 
         def cost(shapelets):
             """ Calculate the fitness of an individual/shapelet set"""
