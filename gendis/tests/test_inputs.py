@@ -13,7 +13,7 @@ def test_accept_pd_DataFrame():
 	pd_X = pd.DataFrame(X)
 	pd_y = pd.Series(y)
 
-	genetic = GeneticExtractor()
+	genetic = GeneticExtractor(population_size=5, iterations=5)
 	genetic.fit(pd_X, pd_y)
 
 def test_accept_list():
@@ -23,7 +23,7 @@ def test_accept_list():
 	]
 	y = [0, 0, 0, 0, 1, 1, 1, 1]
 
-	genetic = GeneticExtractor()
+	genetic = GeneticExtractor(population_size=5, iterations=5)
 	genetic.fit(X, y)
 
 def test_accept_np_array():
@@ -39,7 +39,7 @@ def test_accept_np_array():
 	np_X = np.array(np_X)
 	np_y = np.array(y)
 
-	genetic = GeneticExtractor()
+	genetic = GeneticExtractor(population_size=5, iterations=5)
 	genetic.fit(np_X, np_y)
 
 def test_accept_variable_length_arrays():
@@ -49,7 +49,7 @@ def test_accept_variable_length_arrays():
 	]
 	y = [0, 0, 0, 0, 1, 1, 1, 1]
 
-	genetic = GeneticExtractor()
+	genetic = GeneticExtractor(population_size=5, iterations=5)
 	genetic.fit(X, y)
 
 def test_accept_float_labels():
@@ -59,7 +59,7 @@ def test_accept_float_labels():
 	]
 	y = [1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0]
 
-	genetic = GeneticExtractor()
+	genetic = GeneticExtractor(population_size=5, iterations=5)
 	genetic.fit(X, y)
 
 def test_accept_string_labels():
@@ -69,5 +69,5 @@ def test_accept_string_labels():
 	]
 	y = ['a', 'a', 'a', 'a', 'b', 'b', 'b', 'b']
 
-	genetic = GeneticExtractor()
+	genetic = GeneticExtractor(population_size=5, iterations=5)
 	genetic.fit(X, y)
