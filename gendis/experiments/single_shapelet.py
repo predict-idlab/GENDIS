@@ -42,7 +42,7 @@ ax[0][0].annotate('Class 0', (0, 0.5), fontsize=16)
 ax[1][0].axis('off')
 ax[1][0].annotate('Class 1', (0, 0.5), fontsize=16)
 
-plt.savefig('shap_artificial.svg')
+plt.savefig('results/shap_artificial.svg')
 
 plt.show()
 
@@ -138,5 +138,5 @@ ax[2][2].plot([-0.1, max([dist_ts1, dist_ts2, dist_ts3, dist_ts4]) + 0.1], [0, 0
 ax[2][2].axis('off')
 
 
-plt.savefig('extracted_shapelets.svg')
+plt.savefig('results/extracted_shapelets.svg')
 plt.show()

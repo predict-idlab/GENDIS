@@ -19,27 +19,23 @@ Two alternatives:
 In a first step, we need to construct at least a matrix with timeseries (`X_train`) and a vector with labels (`y_train`). Additionally, test data can be loaded as well in order to evaluate the pipeline in the end. **It is important that the labels are in a range of [0, .., C-1], with C the number of classes.**
 
 ```python
-# Read in the datafiles, split them into features and labels
+# Read in the datafiles
+import pandas as pd
 train_df = pd.read_csv(<DATA_FILE>)
 test_df = pd.read_csv(<DATA_FILE>)
+# Split into feature matrices and label vectors
 X_train = train_df.drop('target', axis=1)
 y_train = train_df['target']
 X_test = test_df.drop('target', axis=1)
 y_test = test_df['target']
-
-# Map the labels to the range [0, ..., C-1] with C the number of classes
-map_dict = {}
-for j, c in enumerate(np.unique(y_train)):
-    map_dict[c] = j
-y_train = y_train.map(map_dict) 
-y_test = y_test.map(map_dict)
 ```
 
 ### 2. Creating a `GeneticExtractor` object
 
 Construct the object. For a list of all possible parameters, and a description, please refer to the documentation in the [code](gendis/genetic.py)
 
-```
+```python
+from gendis.genetic import GeneticExtractor
 genetic_extractor = GeneticExtractor(population_size=50, iterations=25, verbose=False, 
                                      normed=False, add_noise_prob=0.3, add_shapelet_prob=0.3, 
                                      wait=10, plot='notebook', remove_shapelet_prob=0.3, 
@@ -57,6 +53,8 @@ distances_test = genetic_extractor.transform(X_test)
 ### 4. Fit ML classifier on constructed distance matrix
 
 ```python
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
 lr = LogisticRegression()
 lr.fit(distances_train, y_train)
 
@@ -73,19 +71,11 @@ All datasets in this repository are downloaded from [timeseriesclassification](h
 
 ## Paper experiments
 
-In order to reproduce the results from the corresponding paper, we provide files in a separate [directory](gendis/experiments)
-
-### Dependent vs independent discovery
-
-### Simple artificial two-class problem that cannot be solved by brute-force approach
-
-### [LTS](https://www.ismll.uni-hildesheim.de/pub/pdfs/grabocka2014e-kdd.pdf) vs GENDIS
-
-### LTS with smaller shapelet dicts: predictive performance assessment
+In order to reproduce the results from the corresponding paper, please check out [this directory](gendis/experiments).
 
 ## Tests
 
-We provide a few doctest. Deploy them by running `python3 -m doctest -v <FILE>`, where `<FILE>` is the Python file you want to run the doctests from.
+We provide a few doctests and unit tests. To run the doctests: `python3 -m doctest -v <FILE>`, where `<FILE>` is the Python file you want to run the doctests from. To run unit tests: `nose2 -v`
 
 ## Contributing, Citing and Contact
 

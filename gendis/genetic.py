@@ -31,7 +31,7 @@ from sklearn.model_selection import StratifiedKFold, cross_val_predict
 from sklearn.metrics import log_loss
 
 # Util functions
-import gendis.util
+import gendis.util as util
 
 # Ignore warnings
 import warnings; warnings.filterwarnings('ignore')
@@ -79,6 +79,8 @@ class GeneticExtractor():
     ----------
     shapelets : array-like
         The fittest shapelet set after evolution
+    label_mapping: dict
+        A dictionary that maps the labels to the range [0, ..., C-1]
 
     Example
     -------
@@ -99,9 +101,10 @@ class GeneticExtractor():
     1.0
     """
     def __init__(self, population_size=50, iterations=25, verbose=False, 
-                 normed=False, add_noise_prob=0.3, add_shapelet_prob=0.3, 
-                 wait=10, plot=None, remove_shapelet_prob=0.3, 
+                 normed=False, add_noise_prob=0.4, add_shapelet_prob=0.4, 
+                 wait=10, plot=None, remove_shapelet_prob=0.4, 
                  crossover_prob=0.66, n_jobs=4):
+        # Hyper-parameters
         self.population_size = population_size
         self.iterations = iterations
         self.verbose = verbose
@@ -113,6 +116,32 @@ class GeneticExtractor():
         self.wait = wait
         self.n_jobs = n_jobs
         self.normed = normed
+
+        # Attributes
+        self.label_mapping = {}
+        self.shapelets = []
+        self._min_length = 0
+
+    def _convert_X(self, X):
+        if isinstance(X, list):
+            for i in range(len(X)):
+                X[i] = np.array(X[i])
+            X = np.array(X)
+
+        if isinstance(X, pd.DataFrame):
+            X = X.values
+
+        return X
+
+    def _convert_y(self, y):
+        # Map labels to [0, ..., C-1]
+        for j, c in enumerate(np.unique(y)):
+            self.label_mapping[c] = j
+
+        # Use pandas map function and convert to numpy
+        y = np.reshape(pd.Series(y).map(self.label_mapping).values, (-1, 1))
+
+        return y
 
     def fit(self, X, y):
         """Extract shapelets from the provided timeseries and labels.
@@ -126,17 +155,14 @@ class GeneticExtractor():
         y : array-like, shape = [n_samples]
             The target values.
         """
-        # If y is a 1D list, convert it to a 2D column np array
-        if type(y) is list or len(y.shape) == 1:
-            y = np.reshape(y, (-1, 1))
+        X = self._convert_X(X)
+        y = self._convert_y(y)
 
-        # Sci-kit learn checks
-        check_array(X)
+        # Sci-kit learn check for label vector
+        # We allow variable-length feature vectors
         check_array(y)
 
-        # Determine the minimum and maximum shapelet length
-        min_len = 4
-        max_len = min([len(x) for x in X])
+        self._min_length = min([len(x) for x in X])
 
         # We will try to maximize the negative logloss of LR in CV.
         # In the case of ties, we pick the one with least number of shapelets
@@ -151,9 +177,9 @@ class GeneticExtractor():
             shaps = []
             for _ in range(n_shapelets):
                 rand_row = np.random.randint(X.shape[0])
-                rand_length = np.random.randint(min_len, max_len)
-                rand_col = np.random.randint(X.shape[1] - rand_length)
-                shaps.append(X[rand_row, rand_col:rand_col+rand_length])
+                rand_length = np.random.randint(4, self._min_length)
+                rand_col = np.random.randint(self._min_length - rand_length)
+                shaps.append(X[rand_row][rand_col:rand_col+rand_length])
             if n_shapelets > 1:
                 return np.array(shaps)
             else:
@@ -162,7 +188,7 @@ class GeneticExtractor():
         def kmeans(n_shapelets, shp_len, n_draw=1000):
             """Sample subseries from the timeseries and apply K-Means on them"""
             # Sample `n_draw` subseries of length `shp_len`
-            n_ts, sz = X.shape
+            n_ts, sz = len(X), self._min_length
             indices_ts = np.random.choice(n_ts, size=n_draw, replace=True)
             start_idx = np.random.choice(sz - shp_len + 1, size=n_draw, 
                                          replace=True)
@@ -170,7 +196,7 @@ class GeneticExtractor():
 
             subseries = np.zeros((n_draw, shp_len))
             for i in range(n_draw):
-                subseries[i] = X[indices_ts[i], start_idx[i]:end_idx[i]]
+                subseries[i] = X[indices_ts[i]][start_idx[i]:end_idx[i]]
 
             tskm = TimeSeriesKMeans(n_clusters=n_shapelets, metric="euclidean", 
                                     verbose=False)
@@ -180,11 +206,13 @@ class GeneticExtractor():
             """Extract some motifs from sampled timeseries"""
             shaps = []
             for _ in range(n_shapelets):
-                rand_length = np.random.randint(min_len, max_len)
+                rand_length = np.random.randint(4, self._min_length)
                 subset_idx = np.random.choice(range(len(X)), 
                                               size=n_draw, 
                                               replace=True)
-                ts = X[subset_idx, :].flatten()
+                ts = []
+                for idx in subset_idx:
+                    ts += list(X[idx].flatten())
                 matrix_profile, _ = mstamp_stomp(ts, rand_length)
                 motif_idx = matrix_profile[0, :].argsort()[-1]
                 shaps.append(ts[motif_idx:motif_idx + rand_length])
@@ -196,12 +224,13 @@ class GeneticExtractor():
         def create_individual(n_shapelets=None):
             """ Generate a random shapelet set """
             if n_shapelets is None:
-                n_shapelets = np.random.randint(2, int(np.sqrt(X.shape[1])) + 1)
+                ub = int(np.sqrt(self._min_length)) + 1
+                n_shapelets = np.random.randint(2, ub)
             
             rand = np.random.random()
             if n_shapelets > 1:
                 if rand < 1./3.:
-                    rand_length = np.random.randint(min_len, max_len)
+                    rand_length = np.random.randint(4, self._min_length)
                     return kmeans(n_shapelets, rand_length)
                 elif 1./3. < rand < 2./3.:
                     return motif(n_shapelets)
@@ -220,7 +249,7 @@ class GeneticExtractor():
             start = time.time()
             D = np.zeros((len(X), len(shapelets)))
             for k in range(len(X)):
-                ts = X[k, :]
+                ts = X[k]
                 for j in range(len(shapelets)):
                     if self.normed:
                         dist = util.sdist(shapelets[j].flatten(), ts)
@@ -230,7 +259,7 @@ class GeneticExtractor():
 
                 
             lr = LogisticRegression()
-            skf = StratifiedKFold(n_splits=3, shuffle=True, random_state=1337)
+            skf = StratifiedKFold(n_splits=4, shuffle=True, random_state=1337)
             preds = cross_val_predict(lr, D, y, method='predict_proba', cv=skf) 
             cv_score = -log_loss(y, preds)
 
@@ -455,11 +484,10 @@ class GeneticExtractor():
         D : array-like, shape = [n_ts, n_shaps]
             The matrix with distances
         """
+        X = self._convert_X(X)
+
         # Check is fit had been called
         check_is_fitted(self, ['shapelets'])
-
-        # Input validation
-        check_array(X)
 
         # Construct (|X| x |S|) distance matrix
         D = np.zeros((len(X), len(self.shapelets)))
@@ -490,14 +518,6 @@ class GeneticExtractor():
         D : array-like, shape = [n_ts, n_shaps]
             The matrix with distances
         """
-        # If y is a 1D list, convert it to a 2D column np array
-        if type(y) is list or len(y.shape) == 1:
-            y = np.reshape(y, (-1, 1))
-
-        # Input validation
-        check_array(X)
-        check_array(y)
-        
         # First call fit, then transform
         self.fit(X, y)
         D = self.transform(X)
