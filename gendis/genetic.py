@@ -465,7 +465,10 @@ class GeneticExtractor():
 
             it += 1
 
-        self.shapelets = np.array(best_ind[0])
+        best_shapelets = []
+        for shap in best_ind[0]:
+            best_shapelets.append(shap.flatten())
+        self.shapelets = best_shapelets
 
     def transform(self, X):
         """After fitting the Extractor, we can transform collections of 
