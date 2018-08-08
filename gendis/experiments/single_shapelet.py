@@ -12,6 +12,7 @@ from genetic_single import SingleGeneticExtractor
 
 from tslearn.shapelets import ShapeletModel
 
+np.random.seed(2018)
 
 # Generate a simple dataset based on sinusoidal waves
 Fs = 8000
@@ -43,8 +44,6 @@ ax[1][0].axis('off')
 ax[1][0].annotate('Class 1', (0, 0.5), fontsize=16)
 
 plt.savefig('results/shap_artificial.svg')
-
-plt.show()
 
 # Split into X matrix and y vector
 X = np.array([
@@ -137,6 +136,4 @@ ax[2][2].scatter([dist_ts3, dist_ts4], [0, 0], c='b', marker='x', alpha=0.5, s=1
 ax[2][2].plot([-0.1, max([dist_ts1, dist_ts2, dist_ts3, dist_ts4]) + 0.1], [0, 0], c='k', alpha=0.25)
 ax[2][2].axis('off')
 
-
 plt.savefig('results/extracted_shapelets.svg')
-plt.show()

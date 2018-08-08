@@ -276,3 +276,43 @@ def bhattacharyya(X, y, cells_per_dim=10):
         dist += (temp * (temp != 1)) ** (1 / len(totals))
     
     return dist
+
+def get_threshold(L):
+    L = sorted(L, key=lambda x: x[0])
+    all_labels = [x[1] for x in L]
+    classes = set(all_labels)
+
+    left_counts, right_counts, all_counts = {}, {}, {}
+    for c in classes: all_counts[c] = 0
+
+    for label in all_labels: all_counts[label] += 1
+    prior_entropy = entropy(list(all_counts.values()))
+
+    max_tau = (L[0][0] + L[1][0]) / 2
+    max_gain, max_gap = float('-inf'), float('-inf')
+    updated = False
+    for k in range(len(L) - 1):
+        for c in classes: 
+            left_counts[c] = 0
+            right_counts[c] = 0
+
+        if L[k][0] == L[k+1][0]: continue
+        tau = (L[k][0] + L[k + 1][0]) / 2
+        
+        left_labels = all_labels[:k+1]
+        right_labels = all_labels[k+1:]
+
+        for label in left_labels: left_counts[label] += 1
+        for label in right_labels: right_counts[label] += 1
+
+        ig = information_gain(
+            prior_entropy, 
+            list(left_counts.values()), 
+            list(right_counts.values())
+        )
+        g = np.mean([x[0] for x in L[k+1:]]) - np.mean([x[0] for x in L[:k+1]])
+        
+        if ig > max_gain or (ig == max_gain and g > max_gap):
+            max_tau, max_gain, max_gap = tau, ig, g
+
+    return max_tau
