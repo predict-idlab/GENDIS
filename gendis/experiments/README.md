@@ -12,9 +12,8 @@ To evaluate both the dependent and independent discovery on a bunch of benchmark
 
 Run `python3 dependent_vs_independent_artificial.py`. Four SVG images will be created in the `results/` directory. One displaying the generated train and test set (`data.svg`), one depicting the two discovered shapelets of both approaches (`shapelets.svg`) and two scatter plots that display the distances to two extracted shapelets (`scatter_.*.svg`).
 
-:--------------------------------------:|:-------------------------------------------------:
-![](results/data.svg "generated_data")  |  ![](results/shapelets.svg "extracted_shapelets")
-![](results/scatter_dependent.svg "dependent_distances") ![](results/scatter_independent.svg "independent_distances")
+<img src="results/data.svg" width="250"/> <img src="results/shapelets.svg" width="250"/> 
+<img src="results/scatter_dependent.svg" width="250"/> <img src="results/scatter_independent.svg" width="250"/> 
 
 ### Simple artificial two-class problem that cannot be solved by brute-force approach
 
