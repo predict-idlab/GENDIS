@@ -104,5 +104,4 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-gendis/results/*
 gendis/results/*/*
