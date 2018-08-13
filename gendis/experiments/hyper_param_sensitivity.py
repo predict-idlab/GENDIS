@@ -5,7 +5,6 @@ import warnings; warnings.filterwarnings('ignore')
 import numpy as np
 import random
 import pandas as pd
-import matplotlib.pyplot as plt
 
 import sys
 sys.path.append('..')
@@ -27,8 +26,8 @@ def grabocka_params_to_shapelet_size_dict(n_ts, ts_sz, n_shapelets, l, r):
     return d
 
 # Load in our data
-TRAIN_PATH = '../data/partitioned/ItalyPowerDemand/ItalyPowerDemand_train.csv'
-TEST_PATH = '../data/partitioned/ItalyPowerDemand/ItalyPowerDemand_test.csv'
+TRAIN_PATH = '../data/partitioned/Coffee/Coffee_train.csv'
+TEST_PATH = '../data/partitioned/Coffee/Coffee_test.csv'
 
 train_df = pd.read_csv(TRAIN_PATH)
 test_df = pd.read_csv(TEST_PATH)
@@ -47,7 +46,7 @@ gendis_results = []
 lts_results = []
 
 i = 0
-while i < 5:
+while i < 15:
 	try:
 	    # Sample random hyper-parameters for LTS
 	    K = np.random.choice([0.05, 0.15, 0.3])
@@ -87,8 +86,8 @@ while i < 5:
 	    wait = np.random.choice([5, 10, 25, 50])
 	    cx_prob = np.random.choice([0.1, 0.25, 0.5, 0.9])
 	    mut_prob = np.random.choice([0.1, 0.25, 0.5, 0.9])
-	    pop_size = np.random.choice([10, 50, 100, 250, 1000])
-	    genetic_extractor = GeneticExtractor(verbose=True, population_size=pop_size, iterations=10000, wait=wait,
+	    pop_size = np.random.choice([10, 50, 100, 250])
+	    genetic_extractor = GeneticExtractor(verbose=True, population_size=pop_size, iterations=100, wait=wait,
 	                                         add_noise_prob=mut_prob, add_shapelet_prob=mut_prob, 
 	                                         remove_shapelet_prob=mut_prob, crossover_prob=cx_prob)
 	    shapelets = genetic_extractor.fit(X_train, y_train)
@@ -103,8 +102,8 @@ while i < 5:
 
 	    print([wait, cx_prob, mut_prob, pop_size], acc)
 
-	    lts_results.append([wait, cx_prob, mut_prob, pop_size, acc])
-		i += 1
+	    gendis_results.append([wait, cx_prob, mut_prob, pop_size, acc])
+	    i += 1
 	except:
 		pass
 
@@ -115,5 +114,5 @@ lts_df.columns = ['K', 'L', 'R', '_lambda', 'n_iterations', 'acc']
 gendis_df = pd.DataFrame(gendis_results)
 gendis_df.columns = ['wait', 'cx_prob', 'mut_prob', 'pop_size', 'acc']
 
-lts_df.to_csv('results/lts_hyperparams.csv')
-gendis_df.to_csv('results/gendis_hyperparams.csv')
+lts_df.to_csv('results/lts_hyperparams_Coffee.csv')
+gendis_df.to_csv('results/gendis_hyperparams_Coffee.csv')
