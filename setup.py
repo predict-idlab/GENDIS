@@ -3,7 +3,7 @@
 from setuptools import setup
 
 setup(name='GENDIS',
-      version='1.0.7',
+      version='1.0.8',
       description=' Contains an implementation (sklearn API) of the algorithm proposed in "GENDIS: GEnetic DIscovery of Shapelets" and code to reproduce all experiments.',
       author='Gilles Vandewiele',
       author_email='gilles.vandewiele@ugent.be',
