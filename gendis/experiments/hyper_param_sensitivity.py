@@ -26,8 +26,8 @@ def grabocka_params_to_shapelet_size_dict(n_ts, ts_sz, n_shapelets, l, r):
     return d
 
 # Load in our data
-TRAIN_PATH = '../data/partitioned/Coffee/Coffee_train.csv'
-TEST_PATH = '../data/partitioned/Coffee/Coffee_test.csv'
+TRAIN_PATH = '../data/partitioned/SonyAIBORobotSurface1/SonyAIBORobotSurface1_train.csv'
+TEST_PATH = '../data/partitioned/SonyAIBORobotSurface1/SonyAIBORobotSurface1_test.csv'
 
 train_df = pd.read_csv(TRAIN_PATH)
 test_df = pd.read_csv(TEST_PATH)
@@ -114,5 +114,5 @@ lts_df.columns = ['K', 'L', 'R', '_lambda', 'n_iterations', 'acc']
 gendis_df = pd.DataFrame(gendis_results)
 gendis_df.columns = ['wait', 'cx_prob', 'mut_prob', 'pop_size', 'acc']
 
-lts_df.to_csv('results/lts_hyperparams_Coffee.csv')
-gendis_df.to_csv('results/gendis_hyperparams_Coffee.csv')
+lts_df.to_csv('results/lts_hyperparams_SonyAIBORobotSurface1.csv')
+gendis_df.to_csv('results/gendis_hyperparams_SonyAIBORobotSurface1.csv')
