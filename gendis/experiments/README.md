@@ -1,4 +1,4 @@
-## Please note that the shapelet discovery process takes a significant amount of time for most datasets.
+## _Please note_ that the shapelet discovery process takes a significant amount of time for most datasets.
 
 ### Dependent vs independent discovery
 

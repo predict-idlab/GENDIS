@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+from matplotlib.markers import MarkerStyle
 import sys
 sys.path.append('../other')
 from sax import SAXExtractor
@@ -106,16 +108,7 @@ y_test = np.array(y_test)
 #                          2. Plot train and test set                        #
 ##############################################################################
 
-cmap = {
-    0: 'c',
-    1: 'g',
-    2: 'r',
-    3: 'g',
-    4: 'r',
-    5: 'y',
-    6: 'b',
-    7: 'w',
-}
+cmap = plt.get_cmap('viridis')
 
 class_map = {}
 for i, c in enumerate(set(y_train)):
@@ -126,14 +119,14 @@ added_labels = set()
 plt.figure(figsize=(15, 5))
 for ts, label in zip(X_train, y_train):
     if label in added_labels:
-        plt.plot(range(len(ts)), ts, c=cmap[label], alpha=0.25)
+        plt.plot(range(len(ts)), ts, c=cmap(label / (len(set(y_train))  - 1)), alpha=0.5)
     else:
-        plt.plot(range(len(ts)), ts, c=cmap[label], alpha=0.25, 
+        plt.plot(range(len(ts)), ts, c=cmap(label / (len(set(y_train))  - 1)), alpha=0.5, 
         		 label=class_map[label])
         added_labels.add(label)
 
 for ts, label in zip(X_test, y_test):
-    plt.plot(range(len(ts), 2*len(ts)), ts, c=cmap[label], alpha=0.25)
+    plt.plot(range(len(ts), 2*len(ts)), ts, c=cmap(label / (len(set(y_train))  - 1)), alpha=0.5)
 
 plt.axis('off')
 plt.legend(prop={'size': 14}, loc='center')
@@ -167,14 +160,14 @@ independent_shapelets = np.array([np.array(x) for x in independent_shapelets])
 plt.figure(figsize=(15, 5))
 for i, shap in enumerate(dependent_shapelets):
     if i == 0:
-        plt.plot(range(len(shap)), shap, c='r', alpha=0.33, label='dependent')
+        plt.plot(range(len(shap)), shap, c=cmap(0), alpha=0.5, label='dependent')
     else:
-        plt.plot(range(len(shap)), shap, c='r', alpha=0.33)
+        plt.plot(range(len(shap)), shap, c=cmap(0), alpha=0.5)
 for i, shap in enumerate(independent_shapelets):
     if i == 0:
-        plt.plot(range(len(shap)), shap, c='b', alpha=0.33, label='independent')
+        plt.plot(range(len(shap)), shap, c=cmap(1), alpha=0.5, label='independent')
     else:
-        plt.plot(range(len(shap)), shap, c='b', alpha=0.33)
+        plt.plot(range(len(shap)), shap, c=cmap(1), alpha=0.5)
 plt.legend(prop={'size': 14})
 plt.axis('off')
 plt.title('Independent vs dependent shapelets')
@@ -187,31 +180,25 @@ plt.savefig('results/shapelets.svg')
 dependent_features = calculate_distance_matrix(X_test, dependent_shapelets)
 independent_features = calculate_distance_matrix(X_test, independent_shapelets)
 
-print(independent_features)
-
-plt.figure()
-for i, c in zip(range(3), ['r', 'g', 'b']):
+plt.figure(figsize=(10,10))
+for i, c in zip(range(3), ['#edf8b1', '#7fcdbb', '#2c7fb8']):
     filtered_features = dependent_features[y_test == i]
     plt.scatter([x[0] for x in filtered_features], 
                 [x[1] for x in filtered_features], 
-                c=c, label='Class {}'.format(i))
-plt.legend(prop={'size': 14})
-plt.xlabel('Distance $S_1$')
-plt.ylabel('Distance $S_2$')
-plt.title('Scatter plot of distances to dependent shapelets')
-plt.savefig('results/scatter_dependent.svg')
+                s=100,
+                c=cmap(i / 2), label='Class {} -- dependent'.format(i))
 
-plt.figure()
-for i, c in zip(range(3), ['r', 'g', 'b']):
+for i, c in zip(range(3), ['#edf8b1', '#7fcdbb', '#2c7fb8']):
     filtered_features = independent_features[y_test == i]
     plt.scatter([x[0] for x in filtered_features], 
                 [x[1] for x in filtered_features], 
-                c=c, label='Class {}'.format(i))
-plt.legend(prop={'size': 14})
-plt.xlabel('Distance $S_1$')
-plt.ylabel('Distance $S_2$')
-plt.title('Scatter plot of distances to independent shapelets')
-plt.savefig('results/scatter_independent.svg')
+                s=100,
+                c=cmap(i / 2), marker='x', label='Class {} -- independent'.format(i))
+
+plt.legend(prop={'size': 12}, ncol=2)
+plt.xlabel('Distance $S_1$', fontsize=16)
+plt.ylabel('Distance $S_2$', fontsize=16)
+plt.savefig('results/distances_scatter.svg')
 
 ##############################################################################
 #                       7. Fit Logistic Regression                           #
