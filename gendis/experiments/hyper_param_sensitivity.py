@@ -114,5 +114,10 @@ lts_df.columns = ['K', 'L', 'R', '_lambda', 'n_iterations', 'acc']
 gendis_df = pd.DataFrame(gendis_results)
 gendis_df.columns = ['wait', 'cx_prob', 'mut_prob', 'pop_size', 'acc']
 
+<<<<<<< HEAD
 lts_df.to_csv('results/lts_hyperparams_SonyAIBORobotSurface2.csv')
 gendis_df.to_csv('results/gendis_hyperparams_SonyAIBORobotSurface2.csv')
+=======
+lts_df.to_csv('results/lts_hyperparams_SonyAIBORobotSurface1.csv')
+gendis_df.to_csv('results/gendis_hyperparams_SonyAIBORobotSurface1.csv')
+>>>>>>> e6e69ca34a4b4c1b4d84f9e6d2b316887a29cc34
