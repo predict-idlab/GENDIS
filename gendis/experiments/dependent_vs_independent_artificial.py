@@ -12,6 +12,9 @@ from sklearn.model_selection import GridSearchCV
 
 import warnings; warnings.filterwarnings('ignore')
 
+plt.rc('text', usetex=True)
+plt.rc('text.latex', unicode=True)
+
 np.random.seed(2018)
 
 def calculate_distance_matrix(X, shapelets):
@@ -112,7 +115,7 @@ cmap = plt.get_cmap('viridis')
 
 class_map = {}
 for i, c in enumerate(set(y_train)):
-    class_map[c] = i
+    class_map[c] = 'Class '+str(i)
     
 added_labels = set()
 
@@ -129,10 +132,9 @@ for ts, label in zip(X_test, y_test):
     plt.plot(range(len(ts), 2*len(ts)), ts, c=cmap(label / (len(set(y_train))  - 1)), alpha=0.5)
 
 plt.axis('off')
-plt.legend(prop={'size': 14}, loc='center')
-plt.title('Generated train and test set')
-plt.annotate('train', (1.75, -1.25), fontsize=16)
-plt.annotate('test', (6.75, -1.25), fontsize=16)
+plt.legend(prop={'size': 24}, loc='lower center', ncol=3, bbox_to_anchor=(0.5, -.075))
+plt.annotate('train', (2, 1.25), fontsize=24, ha='center', va='center')
+plt.annotate('test', (7, 1.25), fontsize=24, ha='center', va='center')
 plt.ylim([-1.5, 1.5])
 plt.savefig("results/data.svg", bbox_inches='tight')
 
@@ -180,25 +182,85 @@ plt.savefig('results/shapelets.svg')
 dependent_features = calculate_distance_matrix(X_test, dependent_shapelets)
 independent_features = calculate_distance_matrix(X_test, independent_shapelets)
 
-plt.figure(figsize=(10,10))
-for i, c in zip(range(3), ['#edf8b1', '#7fcdbb', '#2c7fb8']):
-    filtered_features = dependent_features[y_test == i]
-    plt.scatter([x[0] for x in filtered_features], 
-                [x[1] for x in filtered_features], 
-                s=100,
-                c=cmap(i / 2), label='Class {} -- dependent'.format(i))
+f, ax = plt.subplots(2, 2, figsize=(6, 6), gridspec_kw = {'height_ratios':[4, 1]})
 
-for i, c in zip(range(3), ['#edf8b1', '#7fcdbb', '#2c7fb8']):
-    filtered_features = independent_features[y_test == i]
-    plt.scatter([x[0] for x in filtered_features], 
-                [x[1] for x in filtered_features], 
-                s=100,
-                c=cmap(i / 2), marker='x', label='Class {} -- independent'.format(i))
+for k, c in zip(range(3), ['#edf8b1', '#7fcdbb', '#2c7fb8']):
+    filtered_features = dependent_features[y_test == k]
+    for i in range(len(ax)):
+        for j in range(len(ax[i])):
+            ax[i][j].scatter([x[0] for x in filtered_features], 
+                        [x[1] for x in filtered_features], 
+                        s=100,
+                        c=cmap(k / 2), label='Class {} -- dependent'.format(k))
 
-plt.legend(prop={'size': 12}, ncol=2)
-plt.xlabel('Distance $S_1$', fontsize=16)
-plt.ylabel('Distance $S_2$', fontsize=16)
-plt.savefig('results/distances_scatter.svg')
+for k, c in zip(range(3), ['#edf8b1', '#7fcdbb', '#2c7fb8']):
+    filtered_features = independent_features[y_test == k]
+    for i in range(len(ax)):
+        for j in range(len(ax[i])):
+            ax[i][j].scatter([x[0] for x in filtered_features], 
+                        [x[1] for x in filtered_features], 
+                        s=100,
+                        c=cmap(k / 2), marker='x', label='Class {} -- independent'.format(k))
+
+# Upper-left
+ax[0][0].set_xlim(0, 0.1)
+ax[0][0].set_xticks(np.arange(0, 0.11, step=0.1))
+ax[0][0].set_ylim(1.75, 2.75)
+ax[0][0].set_yticks(np.arange(1.75, 2.75, step=0.25))
+ax[0][0].spines['bottom'].set_visible(False)
+ax[0][0].spines['right'].set_visible(False)
+ax[0][0].tick_params(bottom=False, labelbottom='off')
+
+# Bottom-left
+ax[1][0].set_xlim(0, 0.1)
+ax[1][0].set_xticks(np.arange(0, 0.11, step=0.1))
+ax[1][0].set_ylim(0, 0.25)
+ax[1][0].set_yticks(np.arange(0, 0.26, step=0.25))
+ax[1][0].spines['top'].set_visible(False)
+ax[1][0].spines['right'].set_visible(False)
+
+# Upper-right
+ax[0][1].set_xlim(1.9, 2.1)
+ax[0][1].set_xticks(np.arange(1.9, 2.11, step=0.1))
+ax[0][1].set_ylim(1.75, 2.75)
+ax[0][1].set_yticks(np.arange(1.75,2.75, step=0.25))
+ax[0][1].spines['bottom'].set_visible(False)
+ax[0][1].spines['left'].set_visible(False)
+ax[0][1].tick_params(left=False, labelleft='off', bottom=False, labelbottom='off')
+
+# Bottom-right
+ax[1][1].set_xlim(1.9, 2.1)
+ax[1][1].set_xticks(np.arange(1.9, 2.11, step=0.1))
+ax[1][1].set_ylim(0, 0.25)
+ax[1][1].set_yticks(np.arange(0, 0.25, step=0.25))
+ax[1][1].spines['top'].set_visible(False)
+ax[1][1].spines['left'].set_visible(False)
+ax[1][1].tick_params(left=False, labelleft='off')
+
+d = .015  # how big to make the diagonal lines in axes coordinates
+kwargs = dict(transform=ax[0][0].transAxes, color='k', clip_on=False)
+ax[0][0].plot((-d, +d), (-d, +d), **kwargs)       
+ax[0][0].plot((1 - d, 1 + d), (1-d, 1+d), **kwargs)
+
+kwargs = dict(transform=ax[0][1].transAxes, color='k', clip_on=False)
+ax[0][1].plot((1 - d, 1 + d), (-d, +d), **kwargs)  
+ax[0][1].plot((-d, +d), (1 - d, 1 + d), **kwargs) 
+
+kwargs = dict(transform=ax[1][0].transAxes, color='k', clip_on=False)
+ax[1][0].plot((-d, +d), (1 - d*4, 1 + d*4), **kwargs)  
+ax[1][0].plot((1 - d, 1 + d), (-d*4, +d*4), **kwargs)     
+
+kwargs = dict(transform=ax[1][1].transAxes, color='k', clip_on=False)
+ax[1][1].plot((1 - d, 1 + d), (1 - d*4, 1 + d*4), **kwargs)  
+ax[1][1].plot((-d, +d), (-d*4, +d*4), **kwargs)     
+
+f.text(0.,0.5, "Distance $S_2$", ha="center", va="center", fontsize=16, rotation=90)
+f.text(0.5,0., "Distance $S_1$", ha="center", va="center", fontsize=16)
+
+ax[0][0].legend(prop={'size': 13}, ncol=1)
+
+plt.tight_layout()
+plt.savefig('results/distances_scatter.svg', bbox_inches='tight')
 
 ##############################################################################
 #                       7. Fit Logistic Regression                           #

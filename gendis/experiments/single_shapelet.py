@@ -12,6 +12,9 @@ from genetic_single import SingleGeneticExtractor
 
 from tslearn.shapelets import ShapeletModel
 
+plt.rc('text', usetex=True)
+plt.rc('text.latex', unicode=True)
+
 np.random.seed(2018)
 
 # Generate a simple dataset based on sinusoidal waves
@@ -38,10 +41,10 @@ ax[1][2].plot(range(len(ts4)), ts4, c='b')
 ax[1][2].axis('off')
 
 ax[0][0].axis('off')
-ax[0][0].annotate('Class 0', (0, 0.5), fontsize=16)
+ax[0][0].annotate('Class 0', (0, 0.5), fontsize=24)
 
 ax[1][0].axis('off')
-ax[1][0].annotate('Class 1', (0, 0.5), fontsize=16)
+ax[1][0].annotate('Class 1', (0, 0.5), fontsize=24)
 
 plt.savefig('results/shap_artificial.svg')
 
@@ -90,7 +93,7 @@ lts_shapelet = clf.shapelets_[0]
 fig, ax = plt.subplots(3, 3)
 
 ax[0][0].axis('off')
-ax[0][0].annotate('Brute Force', (0, 0.5), fontsize=16)
+ax[0][0].annotate('Brute Force', (0, 0.5), fontsize=24)
 
 ax[0][1].axis('off')
 ax[0][1].plot(range(len(bf_shapelet)), bf_shapelet)
@@ -99,14 +102,14 @@ dist_ts1 = util.sdist_no_norm(bf_shapelet, ts1)
 dist_ts2 = util.sdist_no_norm(bf_shapelet, ts2)
 dist_ts3 = util.sdist_no_norm(bf_shapelet, ts3)
 dist_ts4 = util.sdist_no_norm(bf_shapelet, ts4)
-ax[0][2].scatter([dist_ts1, dist_ts2], [0, 0], c='r', alpha=0.5, s=100)
-ax[0][2].scatter([dist_ts3, dist_ts4], [0, 0], c='b', marker='x', alpha=0.5, s=100)
-ax[0][2].plot([-0.1, max([dist_ts1, dist_ts2, dist_ts3, dist_ts4]) + 0.1], [0, 0], c='k', alpha=0.25)
+ax[0][2].scatter([dist_ts1, dist_ts2], [0, 0], c='r', alpha=0.66, s=225)
+ax[0][2].scatter([dist_ts3, dist_ts4], [0, 0], c='b', marker='x', alpha=0.66, s=225)
+ax[0][2].plot([-0.1, max([dist_ts1, dist_ts2, dist_ts3, dist_ts4]) + 0.1], [0, 0], c='k', alpha=0.25, lw=3)
 ax[0][2].axis('off')
 
 
 ax[1][0].axis('off')
-ax[1][0].annotate('Genetic', (0, 0.5), fontsize=16)
+ax[1][0].annotate('Genetic', (0, 0.5), fontsize=24)
 
 ax[1][1].axis('off')
 ax[1][1].plot(range(len(gen_shapelet)), gen_shapelet)
@@ -115,14 +118,14 @@ dist_ts1 = util.sdist_no_norm(gen_shapelet, ts1)
 dist_ts2 = util.sdist_no_norm(gen_shapelet, ts2)
 dist_ts3 = util.sdist_no_norm(gen_shapelet, ts3)
 dist_ts4 = util.sdist_no_norm(gen_shapelet, ts4)
-ax[1][2].scatter([dist_ts1, dist_ts2], [0, 0], c='r', alpha=0.5, s=100)
-ax[1][2].scatter([dist_ts3, dist_ts4], [0, 0], c='b', marker='x', alpha=0.5, s=100)
-ax[1][2].plot([-0.1, max([dist_ts1, dist_ts2, dist_ts3, dist_ts4]) + 0.1], [0, 0], c='k', alpha=0.25)
+ax[1][2].scatter([dist_ts1, dist_ts2], [0, 0], c='r', alpha=0.66, s=225)
+ax[1][2].scatter([dist_ts3, dist_ts4], [0, 0], c='b', marker='x', alpha=0.66, s=225)
+ax[1][2].plot([-0.1, max([dist_ts1, dist_ts2, dist_ts3, dist_ts4]) + 0.1], [0, 0], c='k', alpha=0.25, lw=3)
 ax[1][2].axis('off')
 
 
 ax[2][0].axis('off')
-ax[2][0].annotate('LTS', (0, 0.5), fontsize=16)
+ax[2][0].annotate('LTS', (0, 0.5), fontsize=24)
 
 ax[2][1].axis('off')
 ax[2][1].plot(range(len(lts_shapelet)), lts_shapelet)
@@ -131,9 +134,9 @@ dist_ts1 = util.sdist_no_norm(lts_shapelet, ts1)
 dist_ts2 = util.sdist_no_norm(lts_shapelet, ts2)
 dist_ts3 = util.sdist_no_norm(lts_shapelet, ts3)
 dist_ts4 = util.sdist_no_norm(lts_shapelet, ts4)
-ax[2][2].scatter([dist_ts1, dist_ts2], [0, 0], c='r', alpha=0.5, s=100)
-ax[2][2].scatter([dist_ts3, dist_ts4], [0, 0], c='b', marker='x', alpha=0.5, s=100)
-ax[2][2].plot([-0.1, max([dist_ts1, dist_ts2, dist_ts3, dist_ts4]) + 0.1], [0, 0], c='k', alpha=0.25)
+ax[2][2].scatter([dist_ts1, dist_ts2], [0, 0], c='r', alpha=0.66, s=225)
+ax[2][2].scatter([dist_ts3, dist_ts4], [0, 0], c='b', marker='x', alpha=0.66, s=225)
+ax[2][2].plot([-0.1, max([dist_ts1, dist_ts2, dist_ts3, dist_ts4]) + 0.1], [0, 0], c='k', alpha=0.25, lw=3)
 ax[2][2].axis('off')
 
 plt.savefig('results/extracted_shapelets.svg')

@@ -26,8 +26,8 @@ def grabocka_params_to_shapelet_size_dict(n_ts, ts_sz, n_shapelets, l, r):
     return d
 
 # Load in our data
-TRAIN_PATH = '../data/partitioned/Coffee/Coffee_train.csv'
-TEST_PATH = '../data/partitioned/Coffee/Coffee_test.csv'
+TRAIN_PATH = '../data/partitioned/ItalyPowerDemand/ItalyPowerDemand_train.csv'
+TEST_PATH = '../data/partitioned/ItalyPowerDemand/ItalyPowerDemand_test.csv'
 
 train_df = pd.read_csv(TRAIN_PATH)
 test_df = pd.read_csv(TEST_PATH)
@@ -87,7 +87,7 @@ while i < 15:
 	    cx_prob = np.random.choice([0.1, 0.25, 0.5, 0.9])
 	    mut_prob = np.random.choice([0.1, 0.25, 0.5, 0.9])
 	    pop_size = np.random.choice([10, 50, 100, 250])
-	    genetic_extractor = GeneticExtractor(verbose=True, population_size=pop_size, iterations=100, wait=wait,
+	    genetic_extractor = GeneticExtractor(verbose=True, population_size=pop_size, iterations=10000, wait=wait,
 	                                         add_noise_prob=mut_prob, add_shapelet_prob=mut_prob, 
 	                                         remove_shapelet_prob=mut_prob, crossover_prob=cx_prob)
 	    shapelets = genetic_extractor.fit(X_train, y_train)
