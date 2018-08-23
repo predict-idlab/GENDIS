@@ -16,16 +16,6 @@ import os
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
-from unittest.mock import MagicMock
-
-class Mock(MagicMock):
-    @classmethod
-    def __getattr__(cls, name):
-        return MagicMock()
-
-MOCK_MODULES = ['tslearn', 'Cython', 'pyximport']
-sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
-
 # -- Project information -----------------------------------------------------
 
 project = 'GENDIS'
@@ -89,7 +79,7 @@ pygments_style = 'sphinx'
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = 'default'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
