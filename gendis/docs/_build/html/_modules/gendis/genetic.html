@@ -1,0 +1,616 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>gendis.genetic &#8212; GENDIS  documentation</title>
+    <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">GENDIS  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for gendis.genetic</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Standard lib</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">defaultdict</span><span class="p">,</span> <span class="n">Counter</span>
+<span class="kn">import</span> <span class="nn">array</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="c1"># &quot;Standard&quot; data science libs</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="c1"># Serialization</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+
+<span class="c1"># Motif extraction</span>
+<span class="kn">from</span> <span class="nn">gendis.mstamp_stomp</span> <span class="k">import</span> <span class="n">mstamp</span> <span class="k">as</span> <span class="n">mstamp_stomp</span>
+
+<span class="c1"># Evolutionary algorithms framework</span>
+<span class="kn">from</span> <span class="nn">deap</span> <span class="k">import</span> <span class="n">base</span><span class="p">,</span> <span class="n">creator</span><span class="p">,</span> <span class="n">algorithms</span><span class="p">,</span> <span class="n">tools</span>
+
+<span class="c1"># Time series operations</span>
+<span class="kn">from</span> <span class="nn">tslearn.clustering</span> <span class="k">import</span> <span class="n">TimeSeriesKMeans</span>
+<span class="kn">from</span> <span class="nn">tslearn.metrics</span> <span class="k">import</span> <span class="n">sigma_gak</span><span class="p">,</span> <span class="n">cdist_gak</span>
+<span class="kn">from</span> <span class="nn">tslearn.clustering</span> <span class="k">import</span> <span class="n">GlobalAlignmentKernelKMeans</span>
+<span class="kn">from</span> <span class="nn">tslearn.barycenters</span> <span class="k">import</span> <span class="n">euclidean_barycenter</span>
+
+<span class="c1"># Parallelization</span>
+<span class="kn">from</span> <span class="nn">pathos.multiprocessing</span> <span class="k">import</span> <span class="n">ProcessingPool</span> <span class="k">as</span> <span class="n">Pool</span>
+
+<span class="c1"># ML</span>
+<span class="kn">from</span> <span class="nn">sklearn.utils</span> <span class="k">import</span> <span class="n">check_array</span>
+<span class="kn">from</span> <span class="nn">sklearn.utils.validation</span> <span class="k">import</span> <span class="n">check_is_fitted</span>
+<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="k">import</span> <span class="n">LogisticRegression</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="k">import</span> <span class="n">StratifiedKFold</span><span class="p">,</span> <span class="n">cross_val_predict</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="k">import</span> <span class="n">log_loss</span>
+
+<span class="c1"># Util functions</span>
+<span class="kn">import</span> <span class="nn">gendis.util</span> <span class="k">as</span> <span class="nn">util</span>
+
+<span class="c1"># Ignore warnings</span>
+<span class="kn">import</span> <span class="nn">warnings</span><span class="p">;</span> <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="GeneticExtractor"><a class="viewcode-back" href="../../gendis.html#gendis.genetic.GeneticExtractor">[docs]</a><span class="k">class</span> <span class="nc">GeneticExtractor</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Feature selection with genetic algorithm.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    population_size : int</span>
+<span class="sd">        The number of individuals in our population. Increasing this parameter</span>
+<span class="sd">        increases both the runtime per generation, as the probability of</span>
+<span class="sd">        finding a good solution.</span>
+
+<span class="sd">    iterations : int</span>
+<span class="sd">        The maximum number of generations the algorithm may run.</span>
+
+<span class="sd">    wait : int</span>
+<span class="sd">        If no improvement has been found for `wait` iterations, then stop</span>
+
+<span class="sd">    add_noise_prob : float</span>
+<span class="sd">        The chance that gaussian noise is added to a random shapelet from a</span>
+<span class="sd">        random individual every generation</span>
+
+<span class="sd">    add_shapelet_prob : float</span>
+<span class="sd">        The chance that a shapelet is added to a random shapelet set every gen</span>
+
+<span class="sd">    remove_shapelet_prob : float</span>
+<span class="sd">        The chance that a shapelet is deleted to a random shapelet set every gen</span>
+
+<span class="sd">    crossover_prob : float</span>
+<span class="sd">        The chance that of crossing over two shapelet sets every generation</span>
+
+<span class="sd">    normed : boolean</span>
+<span class="sd">        Whether we first have to normalize before calculating distances</span>
+
+<span class="sd">    n_jobs : int</span>
+<span class="sd">        The number of threads to use</span>
+
+<span class="sd">    verbose : boolean</span>
+<span class="sd">        Whether to print some statistics in every generation</span>
+
+<span class="sd">    plot : object</span>
+<span class="sd">        Whether to plot the individuals every generation (if the population </span>
+<span class="sd">        size is smaller than or equal to 20), or to plot the fittest individual</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    shapelets : array-like</span>
+<span class="sd">        The fittest shapelet set after evolution</span>
+<span class="sd">    label_mapping: dict</span>
+<span class="sd">        A dictionary that maps the labels to the range [0, ..., C-1]</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    An example showing genetic shapelet extraction on a simple dataset:</span>
+
+<span class="sd">    &gt;&gt;&gt; from tslearn.generators import random_walk_blobs</span>
+<span class="sd">    &gt;&gt;&gt; from genetic import GeneticExtractor</span>
+<span class="sd">    &gt;&gt;&gt; from sklearn.linear_model import LogisticRegression</span>
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; np.random.seed(1337)</span>
+<span class="sd">    &gt;&gt;&gt; X, y = random_walk_blobs(n_ts_per_blob=20, sz=64, noise_level=0.1)</span>
+<span class="sd">    &gt;&gt;&gt; X = np.reshape(X, (X.shape[0], X.shape[1]))</span>
+<span class="sd">    &gt;&gt;&gt; extractor = GeneticExtractor(iterations=5, n_jobs=1, population_size=10)</span>
+<span class="sd">    &gt;&gt;&gt; distances = extractor.fit_transform(X, y)</span>
+<span class="sd">    &gt;&gt;&gt; lr = LogisticRegression()</span>
+<span class="sd">    &gt;&gt;&gt; _ = lr.fit(distances, y)</span>
+<span class="sd">    &gt;&gt;&gt; lr.score(distances, y)</span>
+<span class="sd">    1.0</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">population_size</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                 <span class="n">normed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">add_noise_prob</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">add_shapelet_prob</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> 
+                 <span class="n">wait</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">remove_shapelet_prob</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> 
+                 <span class="n">crossover_prob</span><span class="o">=</span><span class="mf">0.66</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
+        <span class="c1"># Hyper-parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">population_size</span> <span class="o">=</span> <span class="n">population_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iterations</span> <span class="o">=</span> <span class="n">iterations</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_noise_prob</span> <span class="o">=</span> <span class="n">add_noise_prob</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_shapelet_prob</span> <span class="o">=</span> <span class="n">add_shapelet_prob</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">remove_shapelet_prob</span> <span class="o">=</span> <span class="n">remove_shapelet_prob</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">crossover_prob</span> <span class="o">=</span> <span class="n">crossover_prob</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot</span> <span class="o">=</span> <span class="n">plot</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wait</span> <span class="o">=</span> <span class="n">wait</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_jobs</span> <span class="o">=</span> <span class="n">n_jobs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">normed</span> <span class="o">=</span> <span class="n">normed</span>
+
+        <span class="c1"># Attributes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label_mapping</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shapelets</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_min_length</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="nf">_convert_X</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">)):</span>
+                <span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+            <span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">values</span>
+
+        <span class="k">return</span> <span class="n">X</span>
+
+    <span class="k">def</span> <span class="nf">_convert_y</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="c1"># Map labels to [0, ..., C-1]</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">y</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">label_mapping</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">j</span>
+
+        <span class="c1"># Use pandas map function and convert to numpy</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">label_mapping</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">y</span>
+
+    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Extract shapelets from the provided timeseries and labels.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        X : array-like, shape = [n_ts, ]</span>
+<span class="sd">            The training input timeseries. Each timeseries must be an array,</span>
+<span class="sd">            but the lengths can be variable</span>
+
+<span class="sd">        y : array-like, shape = [n_samples]</span>
+<span class="sd">            The target values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_X</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_y</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_min_length</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">X</span><span class="p">])</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_min_length</span> <span class="o">&lt;=</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Time series should be of at least length 4!&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Sci-kit learn check for label vector.</span>
+        <span class="n">check_array</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+
+        <span class="c1"># We will try to maximize the negative logloss of LR in CV.</span>
+        <span class="c1"># In the case of ties, we pick the one with least number of shapelets</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">)</span>
+        <span class="n">creator</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s2">&quot;FitnessMax&quot;</span><span class="p">,</span> <span class="n">base</span><span class="o">.</span><span class="n">Fitness</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">)</span>
+
+        <span class="c1"># Individual are lists (of shapelets (list))</span>
+        <span class="n">creator</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s2">&quot;Individual&quot;</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="n">fitness</span><span class="o">=</span><span class="n">creator</span><span class="o">.</span><span class="n">FitnessMax</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">random_shapelet</span><span class="p">(</span><span class="n">n_shapelets</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Extract a random subseries from the training set&quot;&quot;&quot;</span>
+            <span class="n">shaps</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_shapelets</span><span class="p">):</span>
+                <span class="n">rand_row</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">rand_length</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_min_length</span><span class="p">)</span>
+                <span class="n">rand_col</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_min_length</span> <span class="o">-</span> <span class="n">rand_length</span><span class="p">)</span>
+                <span class="n">shaps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">rand_row</span><span class="p">][</span><span class="n">rand_col</span><span class="p">:</span><span class="n">rand_col</span><span class="o">+</span><span class="n">rand_length</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">n_shapelets</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">shaps</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">shaps</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="k">def</span> <span class="nf">kmeans</span><span class="p">(</span><span class="n">n_shapelets</span><span class="p">,</span> <span class="n">shp_len</span><span class="p">,</span> <span class="n">n_draw</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Sample subseries from the timeseries and apply K-Means on them&quot;&quot;&quot;</span>
+            <span class="c1"># Sample `n_draw` subseries of length `shp_len`</span>
+            <span class="n">n_ts</span><span class="p">,</span> <span class="n">sz</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_min_length</span>
+            <span class="n">indices_ts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">n_ts</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">n_draw</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">start_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">sz</span> <span class="o">-</span> <span class="n">shp_len</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">n_draw</span><span class="p">,</span> 
+                                         <span class="n">replace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">end_idx</span> <span class="o">=</span> <span class="n">start_idx</span> <span class="o">+</span> <span class="n">shp_len</span>
+
+            <span class="n">subseries</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_draw</span><span class="p">,</span> <span class="n">shp_len</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_draw</span><span class="p">):</span>
+                <span class="n">subseries</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">indices_ts</span><span class="p">[</span><span class="n">i</span><span class="p">]][</span><span class="n">start_idx</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span><span class="n">end_idx</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+
+            <span class="n">tskm</span> <span class="o">=</span> <span class="n">TimeSeriesKMeans</span><span class="p">(</span><span class="n">n_clusters</span><span class="o">=</span><span class="n">n_shapelets</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="s2">&quot;euclidean&quot;</span><span class="p">,</span> 
+                                    <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">tskm</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">subseries</span><span class="p">)</span><span class="o">.</span><span class="n">cluster_centers_</span>
+
+        <span class="k">def</span> <span class="nf">motif</span><span class="p">(</span><span class="n">n_shapelets</span><span class="p">,</span> <span class="n">n_draw</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Extract some motifs from sampled timeseries&quot;&quot;&quot;</span>
+            <span class="n">shaps</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_shapelets</span><span class="p">):</span>
+                <span class="n">rand_length</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_min_length</span><span class="p">)</span>
+                <span class="n">subset_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">)),</span> 
+                                              <span class="n">size</span><span class="o">=</span><span class="n">n_draw</span><span class="p">,</span> 
+                                              <span class="n">replace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">ts</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">subset_idx</span><span class="p">:</span>
+                    <span class="n">ts</span> <span class="o">+=</span> <span class="nb">list</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
+                <span class="n">matrix_profile</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">mstamp_stomp</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">rand_length</span><span class="p">)</span>
+                <span class="n">motif_idx</span> <span class="o">=</span> <span class="n">matrix_profile</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">argsort</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">shaps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ts</span><span class="p">[</span><span class="n">motif_idx</span><span class="p">:</span><span class="n">motif_idx</span> <span class="o">+</span> <span class="n">rand_length</span><span class="p">]))</span>
+            <span class="k">if</span> <span class="n">n_shapelets</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">shaps</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">shaps</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="k">def</span> <span class="nf">create_individual</span><span class="p">(</span><span class="n">n_shapelets</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Generate a random shapelet set&quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="n">n_shapelets</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">ub</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_min_length</span><span class="p">))</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="n">n_shapelets</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">ub</span><span class="p">)</span>
+            
+            <span class="n">rand</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">n_shapelets</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">rand</span> <span class="o">&lt;</span> <span class="mf">1.</span><span class="o">/</span><span class="mf">3.</span><span class="p">:</span>
+                    <span class="n">rand_length</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_min_length</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="n">kmeans</span><span class="p">(</span><span class="n">n_shapelets</span><span class="p">,</span> <span class="n">rand_length</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="mf">1.</span><span class="o">/</span><span class="mf">3.</span> <span class="o">&lt;</span> <span class="n">rand</span> <span class="o">&lt;</span> <span class="mf">2.</span><span class="o">/</span><span class="mf">3.</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">motif</span><span class="p">(</span><span class="n">n_shapelets</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">random_shapelet</span><span class="p">(</span><span class="n">n_shapelets</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">rand</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">motif</span><span class="p">(</span><span class="n">n_shapelets</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">random_shapelet</span><span class="p">(</span><span class="n">n_shapelets</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">cost</span><span class="p">(</span><span class="n">shapelets</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Calculate the fitness of an individual/shapelet set&quot;&quot;&quot;</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+            <span class="n">D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">shapelets</span><span class="p">)))</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">)):</span>
+                <span class="n">ts</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">shapelets</span><span class="p">)):</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">normed</span><span class="p">:</span>
+                        <span class="n">dist</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">sdist</span><span class="p">(</span><span class="n">shapelets</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">ts</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">dist</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">sdist_no_norm</span><span class="p">(</span><span class="n">shapelets</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">ts</span><span class="p">)</span>
+                    <span class="n">D</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">dist</span>
+
+                
+            <span class="n">lr</span> <span class="o">=</span> <span class="n">LogisticRegression</span><span class="p">()</span>
+            <span class="n">skf</span> <span class="o">=</span> <span class="n">StratifiedKFold</span><span class="p">(</span><span class="n">n_splits</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">1337</span><span class="p">)</span>
+            <span class="n">preds</span> <span class="o">=</span> <span class="n">cross_val_predict</span><span class="p">(</span><span class="n">lr</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;predict_proba&#39;</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="n">skf</span><span class="p">)</span> 
+            <span class="n">cv_score</span> <span class="o">=</span> <span class="o">-</span><span class="n">log_loss</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">preds</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="p">(</span><span class="n">cv_score</span><span class="p">,</span> <span class="nb">sum</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">shapelets</span><span class="p">]))</span>
+
+        <span class="k">def</span> <span class="nf">add_noise</span><span class="p">(</span><span class="n">shapelets</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Add random noise to a random shapelet&quot;&quot;&quot;</span>
+            <span class="n">rand_shapelet</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">shapelets</span><span class="p">))</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">mutGaussian</span><span class="p">(</span><span class="n">shapelets</span><span class="p">[</span><span class="n">rand_shapelet</span><span class="p">],</span> 
+                              <span class="n">mu</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">indpb</span><span class="o">=</span><span class="mf">0.15</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">shapelets</span><span class="p">,</span>
+
+        <span class="k">def</span> <span class="nf">add_shapelet</span><span class="p">(</span><span class="n">shapelets</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Add a shapelet to the individual&quot;&quot;&quot;</span>
+            <span class="n">shapelets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">create_individual</span><span class="p">(</span><span class="n">n_shapelets</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+            <span class="k">return</span> <span class="n">shapelets</span><span class="p">,</span>
+
+        <span class="k">def</span> <span class="nf">remove_shapelet</span><span class="p">(</span><span class="n">shapelets</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Remove a random shapelet from the individual&quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">shapelets</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">rand_shapelet</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">shapelets</span><span class="p">))</span>
+                <span class="n">shapelets</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">rand_shapelet</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">shapelets</span><span class="p">,</span>
+
+        <span class="k">def</span> <span class="nf">merge_crossover</span><span class="p">(</span><span class="n">ind1</span><span class="p">,</span> <span class="n">ind2</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Merge shapelets from one set with shapelets from the other&quot;&quot;&quot;</span>
+            <span class="c1"># Construct a pairwise similarity matrix using GAK</span>
+            <span class="n">_all</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">ind1</span><span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">ind2</span><span class="p">)</span>
+            <span class="n">similarity_matrix</span> <span class="o">=</span> <span class="n">cdist_gak</span><span class="p">(</span><span class="n">ind1</span><span class="p">,</span> <span class="n">ind2</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="n">sigma_gak</span><span class="p">(</span><span class="n">_all</span><span class="p">))</span>
+
+            <span class="c1"># Iterate over shapelets in `ind1` and merge them with shapelets</span>
+            <span class="c1"># from `ind2`</span>
+            <span class="k">for</span> <span class="n">row_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">similarity_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+                <span class="c1"># Remove all elements equal to 1.0</span>
+                <span class="n">mask</span> <span class="o">=</span> <span class="n">similarity_matrix</span><span class="p">[</span><span class="n">row_idx</span><span class="p">,</span> <span class="p">:]</span> <span class="o">!=</span> <span class="mf">1.0</span>
+                <span class="n">non_equals</span> <span class="o">=</span> <span class="n">similarity_matrix</span><span class="p">[</span><span class="n">row_idx</span><span class="p">,</span> <span class="p">:][</span><span class="n">mask</span><span class="p">]</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">non_equals</span><span class="p">):</span>
+                    <span class="c1"># Get the timeseries most similar to the one at row_idx</span>
+                    <span class="n">max_col_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">non_equals</span><span class="p">)</span>
+                    <span class="n">ts1</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">ind1</span><span class="p">[</span><span class="n">row_idx</span><span class="p">])</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                    <span class="n">ts2</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">ind2</span><span class="p">[</span><span class="n">max_col_idx</span><span class="p">])</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                    <span class="c1"># Merge them and remove nans</span>
+                    <span class="n">ind1</span><span class="p">[</span><span class="n">row_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">euclidean_barycenter</span><span class="p">([</span><span class="n">ts1</span><span class="p">,</span> <span class="n">ts2</span><span class="p">])</span>
+                    <span class="n">ind1</span><span class="p">[</span><span class="n">row_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">ind1</span><span class="p">[</span><span class="n">row_idx</span><span class="p">][</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">ind1</span><span class="p">[</span><span class="n">row_idx</span><span class="p">])]</span>
+
+            <span class="c1"># Apply the same for the elements in ind2</span>
+            <span class="k">for</span> <span class="n">col_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">similarity_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+                <span class="n">mask</span> <span class="o">=</span> <span class="n">similarity_matrix</span><span class="p">[:,</span> <span class="n">col_idx</span><span class="p">]</span> <span class="o">!=</span> <span class="mf">1.0</span>
+                <span class="n">non_equals</span> <span class="o">=</span> <span class="n">similarity_matrix</span><span class="p">[:,</span> <span class="n">col_idx</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">non_equals</span><span class="p">):</span>
+                    <span class="n">max_row_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">non_equals</span><span class="p">)</span>
+                    <span class="n">ts1</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">ind1</span><span class="p">[</span><span class="n">max_row_idx</span><span class="p">])</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                    <span class="n">ts2</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">ind2</span><span class="p">[</span><span class="n">col_idx</span><span class="p">])</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                    <span class="n">ind2</span><span class="p">[</span><span class="n">col_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">euclidean_barycenter</span><span class="p">([</span><span class="n">ts1</span><span class="p">,</span> <span class="n">ts2</span><span class="p">])</span>
+                    <span class="n">ind2</span><span class="p">[</span><span class="n">col_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">ind2</span><span class="p">[</span><span class="n">col_idx</span><span class="p">][</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">ind2</span><span class="p">[</span><span class="n">col_idx</span><span class="p">])]</span>
+
+            <span class="k">return</span> <span class="n">ind1</span><span class="p">,</span> <span class="n">ind2</span>
+
+        <span class="k">def</span> <span class="nf">point_crossover</span><span class="p">(</span><span class="n">ind1</span><span class="p">,</span> <span class="n">ind2</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Apply one- or two-point crossover on the shapelet sets&quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ind1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">ind2</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">:</span>
+                    <span class="n">ind1</span><span class="p">,</span> <span class="n">ind2</span> <span class="o">=</span> <span class="n">tools</span><span class="o">.</span><span class="n">cxOnePoint</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">ind1</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">ind2</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">ind1</span><span class="p">,</span> <span class="n">ind2</span> <span class="o">=</span> <span class="n">tools</span><span class="o">.</span><span class="n">cxTwoPoint</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">ind1</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">ind2</span><span class="p">))</span>
+            
+            <span class="k">return</span> <span class="n">ind1</span><span class="p">,</span> <span class="n">ind2</span>
+
+        <span class="c1"># Register all operations in the toolbox</span>
+        <span class="n">toolbox</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">Toolbox</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_jobs</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">pool</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_jobs</span><span class="p">)</span>
+            <span class="n">toolbox</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;map&quot;</span><span class="p">,</span> <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">toolbox</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;map&quot;</span><span class="p">,</span> <span class="nb">map</span><span class="p">)</span>
+
+
+        <span class="c1"># Register all our operations to the DEAP toolbox</span>
+        <span class="n">toolbox</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;merge&quot;</span><span class="p">,</span> <span class="n">merge_crossover</span><span class="p">)</span>
+        <span class="n">toolbox</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;cx&quot;</span><span class="p">,</span> <span class="n">point_crossover</span><span class="p">)</span>
+        <span class="n">toolbox</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;mutate&quot;</span><span class="p">,</span> <span class="n">add_noise</span><span class="p">)</span>
+        <span class="n">toolbox</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;add&quot;</span><span class="p">,</span> <span class="n">add_shapelet</span><span class="p">)</span>
+        <span class="n">toolbox</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;remove&quot;</span><span class="p">,</span> <span class="n">remove_shapelet</span><span class="p">)</span>
+        <span class="n">toolbox</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;individual&quot;</span><span class="p">,</span>  <span class="n">tools</span><span class="o">.</span><span class="n">initIterate</span><span class="p">,</span> <span class="n">creator</span><span class="o">.</span><span class="n">Individual</span><span class="p">,</span> 
+                         <span class="n">create_individual</span><span class="p">)</span>
+        <span class="n">toolbox</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;population&quot;</span><span class="p">,</span> <span class="n">tools</span><span class="o">.</span><span class="n">initRepeat</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> 
+                         <span class="n">toolbox</span><span class="o">.</span><span class="n">individual</span><span class="p">)</span>
+        <span class="n">toolbox</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;evaluate&quot;</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span>
+        <span class="c1"># Small tournaments to ensure diversity</span>
+        <span class="n">toolbox</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;select&quot;</span><span class="p">,</span> <span class="n">tools</span><span class="o">.</span><span class="n">selTournament</span><span class="p">,</span> <span class="n">tournsize</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>  
+
+        <span class="c1"># Set up the statistics. We will measure the mean, std dev and max</span>
+        <span class="n">stats</span> <span class="o">=</span> <span class="n">tools</span><span class="o">.</span><span class="n">Statistics</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">ind</span><span class="p">:</span> <span class="n">ind</span><span class="o">.</span><span class="n">fitness</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">stats</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;avg&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">)</span>
+        <span class="n">stats</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;std&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">)</span>
+        <span class="n">stats</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;max&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">)</span>
+
+        <span class="c1"># Initialize the population and calculate their initial fitness values</span>
+        <span class="n">pop</span> <span class="o">=</span> <span class="n">toolbox</span><span class="o">.</span><span class="n">population</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">population_size</span><span class="p">)</span>
+        <span class="n">fitnesses</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">toolbox</span><span class="o">.</span><span class="n">evaluate</span><span class="p">,</span> <span class="n">pop</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">fit</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">pop</span><span class="p">,</span> <span class="n">fitnesses</span><span class="p">):</span>
+            <span class="n">ind</span><span class="o">.</span><span class="n">fitness</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="n">fit</span>
+
+        <span class="c1"># Keep track of the best iteration, in order to do stop after `wait`</span>
+        <span class="c1"># generations without improvement</span>
+        <span class="n">it</span><span class="p">,</span> <span class="n">best_it</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
+        <span class="n">best_ind</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">best_score</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;-inf&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Set up a matplotlib figure and set the axes</span>
+        <span class="n">height</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">population_size</span><span class="o">/</span><span class="mi">4</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span> <span class="o">!=</span> <span class="s1">&#39;notebook&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">population_size</span> <span class="o">&lt;=</span> <span class="mi">20</span><span class="p">:</span>
+                <span class="n">f</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">])])</span>
+
+        <span class="c1"># The genetic algorithm starts here</span>
+        <span class="k">while</span> <span class="n">it</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">iterations</span> <span class="ow">and</span> <span class="n">it</span> <span class="o">-</span> <span class="n">best_it</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">wait</span><span class="p">:</span>
+            <span class="n">gen_start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+            <span class="c1"># Clone the population into offspring</span>
+            <span class="n">offspring</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">toolbox</span><span class="o">.</span><span class="n">clone</span><span class="p">,</span> <span class="n">pop</span><span class="p">))</span>
+
+            <span class="c1"># Plot the fittest individual of our population</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">population_size</span> <span class="o">&lt;=</span> <span class="mi">20</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span> <span class="o">==</span> <span class="s1">&#39;notebook&#39;</span><span class="p">:</span>
+                        <span class="n">f</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">ix</span><span class="p">,</span> <span class="n">ind</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">offspring</span><span class="p">):</span>
+                        <span class="n">ax</span><span class="p">[</span><span class="n">ix</span><span class="o">//</span><span class="n">height</span><span class="p">][</span><span class="n">ix</span><span class="o">%</span><span class="n">height</span><span class="p">]</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+                        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">ind</span><span class="p">:</span>
+                            <span class="n">ax</span><span class="p">[</span><span class="n">ix</span><span class="o">//</span><span class="n">height</span><span class="p">][</span><span class="n">ix</span><span class="o">%</span><span class="n">height</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)),</span> <span class="n">s</span><span class="p">)</span>
+                    <span class="n">plt</span><span class="o">.</span><span class="n">pause</span><span class="p">(</span><span class="mf">0.001</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span> <span class="o">==</span> <span class="s1">&#39;notebook&#39;</span><span class="p">:</span> 
+                        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">plt</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>
+                    <span class="k">for</span> <span class="n">shap</span> <span class="ow">in</span> <span class="n">best_ind</span><span class="p">:</span>
+                        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">shap</span><span class="p">)),</span> <span class="n">shap</span><span class="p">)</span>
+                    <span class="n">plt</span><span class="o">.</span><span class="n">pause</span><span class="p">(</span><span class="mf">0.001</span><span class="p">)</span>
+
+            <span class="c1"># Iterate over all individuals and apply CX with certain prob</span>
+            <span class="k">for</span> <span class="n">child1</span><span class="p">,</span> <span class="n">child2</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">offspring</span><span class="p">[::</span><span class="mi">2</span><span class="p">],</span> <span class="n">offspring</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">crossover_prob</span><span class="p">:</span>
+                        <span class="n">toolbox</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">child1</span><span class="p">,</span> <span class="n">child2</span><span class="p">)</span>
+                        <span class="k">del</span> <span class="n">child1</span><span class="o">.</span><span class="n">fitness</span><span class="o">.</span><span class="n">values</span>
+                        <span class="k">del</span> <span class="n">child2</span><span class="o">.</span><span class="n">fitness</span><span class="o">.</span><span class="n">values</span>
+                    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">crossover_prob</span><span class="p">:</span>
+                        <span class="n">toolbox</span><span class="o">.</span><span class="n">cx</span><span class="p">(</span><span class="n">child1</span><span class="p">,</span> <span class="n">child2</span><span class="p">)</span>
+                        <span class="k">del</span> <span class="n">child1</span><span class="o">.</span><span class="n">fitness</span><span class="o">.</span><span class="n">values</span>
+                        <span class="k">del</span> <span class="n">child2</span><span class="o">.</span><span class="n">fitness</span><span class="o">.</span><span class="n">values</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">raise</span>
+
+            <span class="c1"># Apply mutation to each individual</span>
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">indiv</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">offspring</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_noise_prob</span><span class="p">:</span>
+                    <span class="n">toolbox</span><span class="o">.</span><span class="n">mutate</span><span class="p">(</span><span class="n">indiv</span><span class="p">)</span>
+                    <span class="k">del</span> <span class="n">indiv</span><span class="o">.</span><span class="n">fitness</span><span class="o">.</span><span class="n">values</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_shapelet_prob</span><span class="p">:</span>
+                    <span class="n">toolbox</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">indiv</span><span class="p">)</span>
+                    <span class="k">del</span> <span class="n">indiv</span><span class="o">.</span><span class="n">fitness</span><span class="o">.</span><span class="n">values</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">remove_shapelet_prob</span><span class="p">:</span>
+                    <span class="n">toolbox</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">indiv</span><span class="p">)</span>
+                    <span class="k">del</span> <span class="n">indiv</span><span class="o">.</span><span class="n">fitness</span><span class="o">.</span><span class="n">values</span>
+
+            <span class="c1"># Update the fitness values         </span>
+            <span class="n">invalid_ind</span> <span class="o">=</span> <span class="p">[</span><span class="n">ind</span> <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="n">offspring</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">ind</span><span class="o">.</span><span class="n">fitness</span><span class="o">.</span><span class="n">valid</span><span class="p">]</span>
+            <span class="n">fitnesses</span> <span class="o">=</span> <span class="n">toolbox</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">toolbox</span><span class="o">.</span><span class="n">evaluate</span><span class="p">,</span> <span class="n">invalid_ind</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">fit</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">invalid_ind</span><span class="p">,</span> <span class="n">fitnesses</span><span class="p">):</span>
+                <span class="n">ind</span><span class="o">.</span><span class="n">fitness</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="n">fit</span>
+
+            <span class="c1"># Replace population and update hall of fame &amp; statistics</span>
+            <span class="n">new_pop</span> <span class="o">=</span> <span class="n">toolbox</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">offspring</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">population_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">fittest_ind</span> <span class="o">=</span> <span class="n">tools</span><span class="o">.</span><span class="n">selBest</span><span class="p">(</span><span class="n">pop</span> <span class="o">+</span> <span class="n">offspring</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">pop</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">new_pop</span> <span class="o">+</span> <span class="n">fittest_ind</span>
+            <span class="n">it_stats</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">pop</span><span class="p">)</span>
+
+            <span class="c1"># Print our statistics</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">it</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;it</span><span class="se">\t\t</span><span class="s1">avg</span><span class="se">\t\t</span><span class="s1">std</span><span class="se">\t\t</span><span class="s1">max</span><span class="se">\t\t</span><span class="s1">time&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="se">\t\t</span><span class="si">{}</span><span class="se">\t\t</span><span class="si">{}</span><span class="se">\t\t</span><span class="si">{}</span><span class="se">\t</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">it</span><span class="p">,</span> 
+                    <span class="n">np</span><span class="o">.</span><span class="n">around</span><span class="p">(</span><span class="n">it_stats</span><span class="p">[</span><span class="s1">&#39;avg&#39;</span><span class="p">],</span> <span class="mi">4</span><span class="p">),</span> 
+                    <span class="n">np</span><span class="o">.</span><span class="n">around</span><span class="p">(</span><span class="n">it_stats</span><span class="p">[</span><span class="s1">&#39;std&#39;</span><span class="p">],</span> <span class="mi">3</span><span class="p">),</span> 
+                    <span class="n">np</span><span class="o">.</span><span class="n">around</span><span class="p">(</span><span class="n">it_stats</span><span class="p">[</span><span class="s1">&#39;max&#39;</span><span class="p">],</span> <span class="mi">6</span><span class="p">),</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">around</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">gen_start</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> 
+                <span class="p">))</span>
+
+            <span class="c1"># Have we found a new best score?</span>
+            <span class="k">if</span> <span class="n">it_stats</span><span class="p">[</span><span class="s1">&#39;max&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">best_score</span><span class="p">:</span>
+                <span class="n">best_it</span> <span class="o">=</span> <span class="n">it</span>
+                <span class="n">best_score</span> <span class="o">=</span> <span class="n">it_stats</span><span class="p">[</span><span class="s1">&#39;max&#39;</span><span class="p">]</span>
+                <span class="n">best_ind</span> <span class="o">=</span> <span class="n">tools</span><span class="o">.</span><span class="n">selBest</span><span class="p">(</span><span class="n">pop</span> <span class="o">+</span> <span class="n">offspring</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+            <span class="n">it</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">best_shapelets</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">shap</span> <span class="ow">in</span> <span class="n">best_ind</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="n">best_shapelets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">shap</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shapelets</span> <span class="o">=</span> <span class="n">best_shapelets</span>
+
+    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;After fitting the Extractor, we can transform collections of </span>
+<span class="sd">        timeseries in matrices with distances to each of the shapelets in</span>
+<span class="sd">        the evolved shapelet set.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        X : array-like, shape = [n_ts, ]</span>
+<span class="sd">            The training input timeseries. Each timeseries must be an array,</span>
+<span class="sd">            but the lengths can be variable</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        D : array-like, shape = [n_ts, n_shaps]</span>
+<span class="sd">            The matrix with distances</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_X</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+        <span class="c1"># Check is fit had been called</span>
+        <span class="n">check_is_fitted</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;shapelets&#39;</span><span class="p">])</span>
+
+        <span class="c1"># Construct (|X| x |S|) distance matrix</span>
+        <span class="n">D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shapelets</span><span class="p">)))</span>
+        <span class="k">for</span> <span class="n">smpl_idx</span><span class="p">,</span> <span class="n">sample</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">X</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">shap_idx</span><span class="p">,</span> <span class="n">shapelet</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shapelets</span><span class="p">):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">normed</span><span class="p">:</span>
+                    <span class="n">dist</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">sdist</span><span class="p">(</span><span class="n">shapelet</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">sample</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">dist</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">sdist_no_norm</span><span class="p">(</span><span class="n">shapelet</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">sample</span><span class="p">)</span>
+                <span class="n">D</span><span class="p">[</span><span class="n">smpl_idx</span><span class="p">,</span> <span class="n">shap_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">dist</span>
+
+        <span class="k">return</span> <span class="n">D</span>
+
+    <span class="k">def</span> <span class="nf">fit_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Combine both the fit and transform method in one.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        X : array-like, shape = [n_ts, ]</span>
+<span class="sd">            The training input timeseries. Each timeseries must be an array,</span>
+<span class="sd">            but the lengths can be variable</span>
+
+<span class="sd">        y : array-like, shape = [n_samples]</span>
+<span class="sd">            The target values.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        D : array-like, shape = [n_ts, n_shaps]</span>
+<span class="sd">            The matrix with distances</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># First call fit, then transform</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="n">D</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">D</span>
+
+    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Write away all hyper-parameters and discovered shapelets to disk&quot;&quot;&quot;</span>
+        <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;wb+&#39;</span><span class="p">))</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Instantiate a saved GeneticExtractor&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">))</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">GENDIS  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Gilles Vandewiele.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.7.
+    </div>
+  </body>
+</html>

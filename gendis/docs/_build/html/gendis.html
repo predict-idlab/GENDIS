@@ -1,0 +1,175 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>GENDIS &#8212; GENDIS  documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Welcome to GENDIS’s documentation!" href="index.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to GENDIS’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">GENDIS  documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="gendis">
+<h1>GENDIS<a class="headerlink" href="#gendis" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="gendis.genetic.GeneticExtractor">
+<em class="property">class </em><code class="descclassname">gendis.genetic.</code><code class="descname">GeneticExtractor</code><span class="sig-paren">(</span><em>population_size=50</em>, <em>iterations=25</em>, <em>verbose=False</em>, <em>normed=False</em>, <em>add_noise_prob=0.4</em>, <em>add_shapelet_prob=0.4</em>, <em>wait=10</em>, <em>plot=None</em>, <em>remove_shapelet_prob=0.4</em>, <em>crossover_prob=0.66</em>, <em>n_jobs=4</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gendis/genetic.html#GeneticExtractor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gendis.genetic.GeneticExtractor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Feature selection with genetic algorithm.</p>
+<dl class="docutils">
+<dt>population_size <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>The number of individuals in our population. Increasing this parameter
+increases both the runtime per generation, as the probability of
+finding a good solution.</dd>
+<dt>iterations <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>The maximum number of generations the algorithm may run.</dd>
+<dt>wait <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>If no improvement has been found for <cite>wait</cite> iterations, then stop</dd>
+<dt>add_noise_prob <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>The chance that gaussian noise is added to a random shapelet from a
+random individual every generation</dd>
+<dt>add_shapelet_prob <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>The chance that a shapelet is added to a random shapelet set every gen</dd>
+<dt>remove_shapelet_prob <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>The chance that a shapelet is deleted to a random shapelet set every gen</dd>
+<dt>crossover_prob <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>The chance that of crossing over two shapelet sets every generation</dd>
+<dt>normed <span class="classifier-delimiter">:</span> <span class="classifier">boolean</span></dt>
+<dd>Whether we first have to normalize before calculating distances</dd>
+<dt>n_jobs <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>The number of threads to use</dd>
+<dt>verbose <span class="classifier-delimiter">:</span> <span class="classifier">boolean</span></dt>
+<dd>Whether to print some statistics in every generation</dd>
+<dt>plot <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
+<dd>Whether to plot the individuals every generation (if the population 
+size is smaller than or equal to 20), or to plot the fittest individual</dd>
+</dl>
+<dl class="docutils">
+<dt>shapelets <span class="classifier-delimiter">:</span> <span class="classifier">array-like</span></dt>
+<dd>The fittest shapelet set after evolution</dd>
+<dt>label_mapping: dict</dt>
+<dd>A dictionary that maps the labels to the range [0, …, C-1]</dd>
+</dl>
+<p>An example showing genetic shapelet extraction on a simple dataset:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">tslearn.generators</span> <span class="k">import</span> <span class="n">random_walk_blobs</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">genetic</span> <span class="k">import</span> <span class="n">GeneticExtractor</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="k">import</span> <span class="n">LogisticRegression</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">1337</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">random_walk_blobs</span><span class="p">(</span><span class="n">n_ts_per_blob</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">sz</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">noise_level</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">extractor</span> <span class="o">=</span> <span class="n">GeneticExtractor</span><span class="p">(</span><span class="n">iterations</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">population_size</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">distances</span> <span class="o">=</span> <span class="n">extractor</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lr</span> <span class="o">=</span> <span class="n">LogisticRegression</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">_</span> <span class="o">=</span> <span class="n">lr</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">distances</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lr</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">distances</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+<span class="go">1.0</span>
+</pre></div>
+</div>
+<p class="rubric">Methods</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code>([population_size,&nbsp;iterations,&nbsp;…])</td>
+<td>Initialize self.</td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code>(X,&nbsp;y)</td>
+<td>Extract shapelets from the provided timeseries and labels.</td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform</span></code>(X)</td>
+<td>After fitting the Extractor, we can transform collections of  timeseries in matrices with distances to each of the shapelets in the evolved shapelet set.</td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_transform</span></code>(X,&nbsp;y)</td>
+<td>Combine both the fit and transform method in one.</td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code>(path)</td>
+<td>Write away all hyper-parameters and discovered shapelets to disk</td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code>(path)</td>
+<td>Instantiate a saved GeneticExtractor</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to GENDIS’s documentation!</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/gendis.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to GENDIS’s documentation!"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">GENDIS  documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Gilles Vandewiele.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.7.
+    </div>
+  </body>
+</html>
