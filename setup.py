@@ -18,9 +18,9 @@ setup(name='GENDIS',
       	  'scipy==1.1.0',
       	  'sklearn==0.0',
       	  'tqdm==4.23.2',
+          'Cython == 0.28.2',
       	  'tslearn==0.1.18.3',
-          'nose2==0.8.0',
-          'Cython == 0.28.2'
+          'nose2==0.8.0'
       ],
       test_suite='nose2.collector.collector',
      )
