@@ -46,7 +46,7 @@ gendis_results = []
 lts_results = []
 
 i = 0
-while i < 15:
+while i < 5:
 	try:
 	    # Sample random hyper-parameters for LTS
 	    K = np.random.choice([0.05, 0.15, 0.3])
@@ -108,11 +108,10 @@ while i < 15:
 		pass
 
 
-
 lts_df = pd.DataFrame(lts_results)
 lts_df.columns = ['K', 'L', 'R', '_lambda', 'n_iterations', 'acc']
 gendis_df = pd.DataFrame(gendis_results)
 gendis_df.columns = ['wait', 'cx_prob', 'mut_prob', 'pop_size', 'acc']
 
-lts_df.to_csv('results/lts_hyperparams_Coffee.csv')
-gendis_df.to_csv('results/gendis_hyperparams_Coffee.csv')
+lts_df.to_csv('results/lts_hyperparams.csv')
+gendis_df.to_csv('results/gendis_hyperparams.csv')

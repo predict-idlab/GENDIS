@@ -11,13 +11,13 @@ import sys
 sys.path.append('..')
 
 from genetic import GeneticExtractor
-from data.load_all_datasets import load_data_train_test
 
 from sklearn.metrics import accuracy_score, log_loss
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
 
 from tslearn.shapelets import ShapeletModel
+from tslearn.datasets import UCR_UEA_datasets
 
 
 def grabocka_params_to_shapelet_size_dict(n_ts, ts_sz, n_shapelets, l, r):
@@ -29,7 +29,15 @@ def grabocka_params_to_shapelet_size_dict(n_ts, ts_sz, n_shapelets, l, r):
     return d
 
 def fit_lr(X_distances_train, y_train, X_distances_test, y_test, out_path):
-    lr = GridSearchCV(LogisticRegression(), {'penalty': ['l1', 'l2'], 'C': [0.001, 0.01, 0.1, 1.0, 10.0]})
+    lr = GridSearchCV(
+            LogisticRegression(random_state=1337), 
+            {
+              'penalty': ['l1', 'l2'], 
+              'C': [10**i for i in range(-2, 6)] + [5**i for i in range(-2, 6)],
+              'class_weight': [None, 'balanced']
+            }
+        )
+
     lr.fit(X_distances_train, y_train)
     
     hard_preds = lr.predict(X_distances_test)
@@ -44,7 +52,7 @@ def fit_lr(X_distances_train, y_train, X_distances_test, y_test, out_path):
     hard_preds.to_csv(out_path.split('.')[0]+'_lr_hard.csv')
     proba_preds.to_csv(out_path.split('.')[0]+'_lr_proba.csv')
 
-def fit_lts(X_train, y_train, X_test, y_test,  nr_shap, l, r, reg, max_it, shap_out_path, pred_out_path, timing_out_path):
+def lts_discovery(X_train, y_train, X_test, y_test,  nr_shap, l, r, reg, max_it, shap_out_path, pred_out_path, timing_out_path):
     # Fit LTS model, print metrics on test-set, write away predictions and shapelets
     shapelet_dict = grabocka_params_to_shapelet_size_dict(
             X_train.shape[0], X_train.shape[1], int(nr_shap*X_train.shape[1]), l, r
@@ -78,7 +86,7 @@ def fit_lts(X_train, y_train, X_test, y_test,  nr_shap, l, r, reg, max_it, shap_
 
     fit_lr(X_distances_train, y_train, X_distances_test, y_test, pred_out_path)
 
-def fit_genetic(X_train, y_train, X_test, y_test, shap_out_path, pred_out_path, timing_out_path):
+def gendis_discovery(X_train, y_train, X_test, y_test, shap_out_path, pred_out_path, timing_out_path):
     genetic_extractor = GeneticExtractor(verbose=True, population_size=50, iterations=50, wait=25)
     start = time.time()
     shapelets = genetic_extractor.fit(X_train, y_train)
@@ -105,66 +113,60 @@ def fit_genetic(X_train, y_train, X_test, y_test, shap_out_path, pred_out_path, 
 #    * Weight regularizer
 #    * Number of iterations
 hyper_parameters_lts = {
-	'Adiac': 					[0.3,  0.2,   3, 0.01, 10000],
-	'Beef': 					[0.15, 0.125, 3, 0.01, 10000],
-	'BeetleFly': 				[0.15, 0.125, 1, 0.01, 5000],
-	'BirdChicken': 				[0.3,  0.075, 1, 0.1,  10000],
-	'ChlorineConcentration':    [0.3,  0.2,   3, 0.01, 10000],
-	'Coffee': 					[0.05, 0.075, 2, 0.01, 5000],
-	'DiatomSizeReduction': 		[0.3,  0.175, 2, 0.01, 10000],
+	#'Adiac': 					[0.3,  0.2,   3, 0.01, 10000],
+	#'Beef': 					[0.15, 0.125, 3, 0.01, 10000],
+	#'BeetleFly': 				[0.15, 0.125, 1, 0.01, 5000],
+	#'BirdChicken': 				[0.3,  0.075, 1, 0.1,  10000],
+	#'ChlorineConcentration':    [0.3,  0.2,   3, 0.01, 10000],
+	#'Coffee': 					[0.05, 0.075, 2, 0.01, 5000],
+	#'DiatomSizeReduction': 		[0.3,  0.175, 2, 0.01, 10000],
 	'ECGFiveDays': 				[0.05, 0.125, 2, 0.01, 10000],
-	'FaceFour': 				[0.3,  0.175, 3, 1.0,  5000],
-	'GunPoint': 				[0.15, 0.2,   3, 0.1,  10000],
-	'ItalyPowerDemand':			[0.3,  0.2,   3, 0.01, 5000],
-	'Lightning7': 				[0.05, 0.075, 3, 1,    5000],
-	'MedicalImages': 			[0.3,  0.2,   2, 1,    10000],
+	#'FaceFour': 				[0.3,  0.175, 3, 1.0,  5000],
+	#'GunPoint': 				[0.15, 0.2,   3, 0.1,  10000],
+	#'ItalyPowerDemand':			[0.3,  0.2,   3, 0.01, 5000],
+	#'Lightning7': 				[0.05, 0.075, 3, 1,    5000],
+	#'MedicalImages': 			[0.3,  0.2,   2, 1,    10000],
 	'MoteStrain': 				[0.3,  0.2,   3, 1,    10000],
 	'SonyAIBORobotSurface1': 	[0.3,  0.125, 2, 0.01, 10000],
-	'SonyAIBORobotSurface2': 	[0.3,  0.125, 2, 0.01, 10000],
+	#'SonyAIBORobotSurface2': 	[0.3,  0.125, 2, 0.01, 10000],
 	'Symbols': 					[0.05, 0.175, 1, 0.1,  5000],
-	'SyntheticControl': 		[0.15, 0.125, 3, 0.01, 5000],
-	'Trace': 					[0.15, 0.125, 2, 0.1,  10000],
+	#'SyntheticControl': 		[0.15, 0.125, 3, 0.01, 5000],
+	#'Trace': 					[0.15, 0.125, 2, 0.1,  10000],
 	'TwoLeadECG': 				[0.3,  0.075, 1, 0.1,  10000]
 }
 
-metadata = sorted(load_data_train_test(), key=lambda x: x['train']['n_samples']**2*x['train']['n_features']**3)
 result_vectors = []
+data_loader = UCR_UEA_datasets()
 
-for dataset in metadata:
-    if dataset['train']['name'] not in hyper_parameters_lts: continue
-
-    print(dataset['train']['name'])
+for dataset in hyper_parameters_lts:
+    print(dataset)
 
     # Load the training and testing dataset (features + label vector)
-    train_df = pd.read_csv(dataset['train']['data_path'])
-    test_df = pd.read_csv(dataset['test']['data_path'])
-    X_train = train_df.drop('target', axis=1).values
-    y_train = train_df['target']
-    X_test = test_df.drop('target', axis=1).values
-    y_test = test_df['target']
+    X_train, y_train, X_test, y_test = data_loader.load_dataset(dataset)
 
+    X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1]))
+    X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1]))
+
+    # Map labels to [0, .., C-1]
     map_dict = {}
     for j, c in enumerate(np.unique(y_train)):
         map_dict[c] = j
-    y_train = y_train.map(map_dict) 
-    y_test = y_test.map(map_dict)
+    y_train = pd.Series(y_train).map(map_dict).values
+    y_test = pd.Series(y_test).map(map_dict).values
 
-    print(set(y_train), set(y_test))
+    # Get the best hyper-parameters for LTS (from original paper)
+    nr_shap, l, r, reg, max_it = hyper_parameters_lts[dataset]
 
-    y_train = y_train.values
-    y_test = y_test.values
-
-    nr_shap, l, r, reg, max_it = hyper_parameters_lts[dataset['train']['name']]
-
-    fit_lts(X_train, y_train, X_test, y_test, nr_shap, l, r, reg, max_it,
-            'results/lts_vs_genetic/{}_learned_shapelets_{}.txt'.format(dataset['train']['name'], int(time.time())), 
-            'results/lts_vs_genetic/{}_learned_shapelets_predictions_{}.csv'.format(dataset['train']['name'], int(time.time())), 
-            'results/lts_vs_genetic/{}_learned_runtime_{}.csv'.format(dataset['train']['name'], int(time.time()))
+    # LTS Discovery & write away results to disk
+    lts_discovery(X_train, y_train, X_test, y_test, nr_shap, l, r, reg, max_it,
+            'results/lts_vs_genetic/{}_learned_shapelets_{}.txt'.format(dataset, int(time.time())), 
+            'results/lts_vs_genetic/{}_learned_shapelets_predictions_{}.csv'.format(dataset, int(time.time())), 
+            'results/lts_vs_genetic/{}_learned_runtime_{}.csv'.format(dataset, int(time.time()))
     )
 
-
-    fit_genetic(X_train, y_train, X_test, y_test,  
-            'results/lts_vs_genetic/{}_genetic_shapelets_{}.txt'.format(dataset['train']['name'], int(time.time())), 
-            'results/lts_vs_genetic/{}_genetic_shapelets_predictions_{}.csv'.format(dataset['train']['name'], int(time.time())),
-            'results/lts_vs_genetic/{}_genetic_runtime_{}.csv'.format(dataset['train']['name'], int(time.time()))
+    # GENDIS Discovery & write away results to disk
+    gendis_discovery(X_train, y_train, X_test, y_test,  
+            'results/lts_vs_genetic/{}_genetic_shapelets_{}.txt'.format(dataset, int(time.time())), 
+            'results/lts_vs_genetic/{}_genetic_shapelets_predictions_{}.csv'.format(dataset, int(time.time())),
+            'results/lts_vs_genetic/{}_genetic_runtime_{}.csv'.format(dataset, int(time.time()))
     )

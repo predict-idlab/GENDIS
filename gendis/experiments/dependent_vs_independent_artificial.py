@@ -162,14 +162,14 @@ independent_shapelets = np.array([np.array(x) for x in independent_shapelets])
 plt.figure(figsize=(15, 5))
 for i, shap in enumerate(dependent_shapelets):
     if i == 0:
-        plt.plot(range(len(shap)), shap, c=cmap(0), alpha=0.5, label='dependent')
+        plt.plot(range(len(shap)), shap, c=cmap(0.0), alpha=0.5, label='dependent')
     else:
-        plt.plot(range(len(shap)), shap, c=cmap(0), alpha=0.5)
+        plt.plot(range(len(shap)), shap, c=cmap(0.0), alpha=0.5)
 for i, shap in enumerate(independent_shapelets):
     if i == 0:
-        plt.plot(range(len(shap)), shap, c=cmap(1), alpha=0.5, label='independent')
+        plt.plot(range(len(shap)), shap, c=cmap(1.0), alpha=0.5, label='independent')
     else:
-        plt.plot(range(len(shap)), shap, c=cmap(1), alpha=0.5)
+        plt.plot(range(len(shap)), shap, c=cmap(1.0), alpha=0.5)
 plt.legend(prop={'size': 14})
 plt.axis('off')
 plt.title('Independent vs dependent shapelets')

@@ -8,6 +8,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
+# Serialization
+import pickle
+
 # Motif extraction
 from gendis.mstamp_stomp import mstamp as mstamp_stomp
 
@@ -49,6 +52,9 @@ class GeneticExtractor():
     iterations : int
         The maximum number of generations the algorithm may run.
 
+    wait : int
+        If no improvement has been found for `wait` iterations, then stop
+
     add_noise_prob : float
         The chance that gaussian noise is added to a random shapelet from a
         random individual every generation
@@ -71,7 +77,7 @@ class GeneticExtractor():
     verbose : boolean
         Whether to print some statistics in every generation
 
-    plot : boolean
+    plot : object
         Whether to plot the individuals every generation (if the population 
         size is smaller than or equal to 20), or to plot the fittest individual
 
@@ -223,7 +229,7 @@ class GeneticExtractor():
                 return np.array(shaps[0])
 
         def create_individual(n_shapelets=None):
-            """ Generate a random shapelet set """
+            """Generate a random shapelet set"""
             if n_shapelets is None:
                 ub = int(np.sqrt(self._min_length)) + 1
                 n_shapelets = np.random.randint(2, ub)
@@ -244,7 +250,7 @@ class GeneticExtractor():
                     return random_shapelet(n_shapelets)
 
         def cost(shapelets):
-            """ Calculate the fitness of an individual/shapelet set"""
+            """Calculate the fitness of an individual/shapelet set"""
             start = time.time()
             D = np.zeros((len(X), len(shapelets)))
             for k in range(len(X)):
@@ -287,7 +293,7 @@ class GeneticExtractor():
             return shapelets,
 
         def merge_crossover(ind1, ind2):
-            """ Merge shapelets from one set with shapelets from the other """
+            """Merge shapelets from one set with shapelets from the other"""
             # Construct a pairwise similarity matrix using GAK
             _all = list(ind1) + list(ind2)
             similarity_matrix = cdist_gak(ind1, ind2, sigma=sigma_gak(_all))
@@ -321,7 +327,7 @@ class GeneticExtractor():
             return ind1, ind2
 
         def point_crossover(ind1, ind2):
-            """ Apply one- or two-point crossover on the shapelet sets """
+            """Apply one- or two-point crossover on the shapelet sets"""
             if len(ind1) > 1 and len(ind2) > 1:
                 if np.random.random() < 0.5:
                     ind1, ind2 = tools.cxOnePoint(list(ind1), list(ind2))
@@ -524,3 +530,12 @@ class GeneticExtractor():
         self.fit(X, y)
         D = self.transform(X)
         return D
+
+    def save(self, path):
+        """Write away all hyper-parameters and discovered shapelets to disk"""
+        pickle.dump(self, open(path, 'wb+'))
+
+    @staticmethod
+    def load(path):
+        """Instantiate a saved GeneticExtractor"""
+        return pickle.load(open(path, 'rb'))
