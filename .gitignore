@@ -104,4 +104,9 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-gendis/results/*/*
+gendis/experiments/results/*/*
+
+# RTD
+_build
+_static
+_templates
