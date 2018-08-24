@@ -16,7 +16,7 @@
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="GENDIS" href="gendis.html" /> 
+    <link rel="next" title="Installation" href="install.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -25,7 +25,7 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="gendis.html" title="GENDIS"
+          <a href="install.html" title="Installation"
              accesskey="N">next</a> |</li>
         <li class="nav-item nav-item-0"><a href="#">GENDIS  documentation</a> &#187;</li> 
       </ul>
@@ -38,11 +38,31 @@
             
   <div class="section" id="welcome-to-gendis-s-documentation">
 <h1>Welcome to GENDIS’s documentation!<a class="headerlink" href="#welcome-to-gendis-s-documentation" title="Permalink to this headline">¶</a></h1>
+<p>In the time series classification domain, shapelets are small subseries
+that are discriminative for a certain class. It has been shown that by
+projecting the original dataset to a distance space, where each axis
+corresponds to the distance to a certain shapelet, classifiers are able
+to achieve state-of-the-art results on a plethora of datasets.</p>
+<p>This repository contains an implementation of <code class="docutils literal notranslate"><span class="pre">GENDIS</span></code>, an algorithm
+that searched for a set of shapelets in a genetic fashion. The algorithm
+is insensitive to its parameters (such as population size, crossover and
+mutation probability, …) and can quickly extract a small set of
+shapelets that is able to achieve predictive performances similar (or
+better) to that of other shapelet techniques.</p>
 <div class="toctree-wrapper compound">
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="start.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="start.html#loading-preprocessing-the-datasets">1. Loading &amp; preprocessing the datasets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="start.html#creating-a-geneticextractor-object">2. Creating a <code class="docutils literal notranslate"><span class="pre">GeneticExtractor</span></code> object</a></li>
+<li class="toctree-l2"><a class="reference internal" href="start.html#fit-the-geneticextractor-and-construct-distance-matrix">3. Fit the <code class="docutils literal notranslate"><span class="pre">GeneticExtractor</span></code> and construct distance matrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="start.html#fit-ml-classifier-on-constructed-distance-matrix">4. Fit ML classifier on constructed distance matrix</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="gendis.html">GENDIS</a><ul class="simple">
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="ccc.html">Contributing, Citing and Contact</a></li>
 </ul>
 </div>
 </div>
@@ -54,8 +74,8 @@
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
   <h4>Next topic</h4>
-  <p class="topless"><a href="gendis.html"
-                        title="next chapter">GENDIS</a></p>
+  <p class="topless"><a href="install.html"
+                        title="next chapter">Installation</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -86,7 +106,7 @@
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="gendis.html" title="GENDIS"
+          <a href="install.html" title="Installation"
              >next</a> |</li>
         <li class="nav-item nav-item-0"><a href="#">GENDIS  documentation</a> &#187;</li> 
       </ul>

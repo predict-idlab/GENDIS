@@ -74,9 +74,56 @@ description, please refer to the documentation in the `code`_
    distances_train = genetic_extractor.transform(X_train)
    distances_test = genetic_extractor.transform(X_test)
 
-4. Fit ML classifier on constructed dist
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+4. Fit ML classifier on constructed distance matrix
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. code:: python
+
+   from sklearn.linear_model import LogisticRegression
+   from sklearn.metrics import accuracy_score
+   lr = LogisticRegression()
+   lr.fit(distances_train, y_train)
+
+   print('Accuracy = {}'.format(accuracy_score(y_test, lr.predict(distances_test))))
+
+Example notebook
+~~~~~~~~~~~~~~~~
+
+A simple example is provided in `this notebook`_
+
+Data
+----
+
+All datasets in this repository are downloaded from
+`timeseriesclassification`_. Please refer to them appropriately when
+using any dataset.
+
+Paper experiments
+-----------------
+
+In order to reproduce the results from the corresponding paper, please
+check out `this directory`_.
+
+Tests
+-----
+
+We provide a few doctests and unit tests. To run the doctests:
+``python3 -m doctest -v <FILE>``, where ``<FILE>`` is the Python file
+you want to run the doctests from. To run unit tests: ``nose2 -v``
+
+Contributing, Citing and Contact
+--------------------------------
+
+For now, please refer to this repository. A paper, to which you can then
+refer, will be published in the nearby future. If you have any
+questions, are experiencing bugs in the GENDIS implementation, or would
+like to contribute, please feel free to create an issue/pull request in
+this repository or take contact with me at
+gilles(dot)vandewiele(at)ugent(dot)be
+
+.. _this notebook: gendis/example.ipynb
+.. _timeseriesclassification: http://timeseriesclassification.com
+.. _this directory: gendis/experiments
 .. _code: gendis/genetic.py
 
 .. |Build Status| image:: https://travis-ci.org/IBCNServices/GENDIS.svg?branch=master
