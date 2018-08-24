@@ -1,3 +1,5 @@
+import sys
+sys.path.append('..')
 from gendis.genetic import GeneticExtractor
 
 import pandas as pd

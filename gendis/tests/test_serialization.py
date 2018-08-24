@@ -1,3 +1,5 @@
+import sys
+sys.path.append('..')
 from gendis.genetic import GeneticExtractor
 from tslearn.generators import random_walk_blobs
 import numpy as np

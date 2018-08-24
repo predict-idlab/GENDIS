@@ -27,6 +27,7 @@ from tslearn.barycenters import euclidean_barycenter
 from pathos.multiprocessing import ProcessingPool as Pool
 
 # ML
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_array
 from sklearn.utils.validation import check_is_fitted
 from sklearn.linear_model import LogisticRegression
@@ -39,7 +40,7 @@ import gendis.util as util
 # Ignore warnings
 import warnings; warnings.filterwarnings('ignore')
 
-class GeneticExtractor():
+class GeneticExtractor(BaseEstimator, TransformerMixin):
     """Feature selection with genetic algorithm.
 
     Parameters
