@@ -1,3 +1,20 @@
+from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
+from sklearn.utils import check_array, check_X_y
+from sklearn.utils.validation import check_is_fitted
+import numpy as np
+import pandas as pd
+from collections import Counter
+import operator
+import sys
+import os
+sys.path.append('..')
+sys.path.append('../other')
+import util
+from sax import SAXExtractor
+import other_util
+from tslearn.datasets import UCR_UEA_datasets
+import warnings; warnings.filterwarnings('ignore')
+
 
 class ShapeletTransformer(BaseEstimator, TransformerMixin):
     """ An example transformer that returns the element-wise square root..
@@ -12,20 +29,7 @@ class ShapeletTransformer(BaseEstimator, TransformerMixin):
     """
     def __init__(self, method=None, min_len=None, max_len=None, 
                  nr_shapelets=1, metric='ig'):
-        if method is None:
-            method = 'fast'
-
-        if type(method) == str:
-            self.extractor = {
-                'fast': extractors.FastExtractor(),
-                'brute': extractors.BruteForceExtractor(),
-                'sax': extractors.SAXExtractor(),
-                'learn': extractors.LearningExtractor(),
-                'genetic': extractors.GeneticExtractor(),
-                'pso': extractors.ParticleSwarmExtractor()
-            }[method]
-        else:
-            self.extractor = method
+        self.extractor = method
             
         self.shapelets = []
         self.min_len = min_len
@@ -146,20 +150,7 @@ class ShapeletTreeClassifier(BaseEstimator, ClassifierMixin):
         The labels passed during :meth:`fit`
     """
     def __init__(self, method=None, max_depth=None, min_samples_split=1, min_len=None, max_len=None, metric='ig'):
-        if method is None:
-            method = 'fast'
-
-        if type(method) == str:
-            self.extractor = {
-                'fast': extractors.FastExtractor(),
-                'brute': extractors.BruteForceExtractor(),
-                'sax': extractors.SAXExtractor(),
-                'learn': extractors.LearningExtractor(),
-                'genetic': extractors.GeneticExtractor(),
-                'pso': extractors.ParticleSwarmExtractor()
-            }[method]
-        else:
-            self.extractor = method
+        self.extractor = method
 
         self.max_depth = max_depth
         self.min_samples_split = min_samples_split
@@ -199,7 +190,7 @@ class ShapeletTreeClassifier(BaseEstimator, ClassifierMixin):
                 D = X[k, :]
                 dist = util.sdist(shapelet, D)
                 L.append((dist, y[k]))
-            threshold = util.get_threshold(L)
+            threshold = other_util.get_threshold(L)
 
             # Create a new internal node
             node = ShapeletTree(right=None, left=None, shapelet=shapelet, threshold=threshold, class_probabilities=self._calc_probs(y))
@@ -276,102 +267,105 @@ def estimate_min_max(X, y, extractor, min_perc=25, max_perc=75, min_len=3,
 
 def extract_shapelets_with_tree(X_train, y_train, extractor, min_len, max_len):
     shap_tree_clf = ShapeletTreeClassifier(method=extractor, min_len=min_len,
-                                           max_len=max_len)
+                                           max_len=max_len, metric=other_util.calculate_ig)
     shap_tree_clf.fit(X_train, y_train)
     return shap_tree_clf.tree.extract_all_shapelets()
 
 datasets = [
-    "ItalyPowerDemand"
-    "SonyAIBORobotSurface1"
-    "SonyAIBORobotSurface2"
-    "MoteStrain"
-    "TwoLeadECG"
-    "ECGFiveDays"
-    #"CBF"
-    #"GunPoint"
-    #"ECG200"
-    #"DiatomSizeReduction"
-    #"Coffee"
-    #"SyntheticControl"
-    #"ArrowHead"
-    #"FaceFour"
-    #"Plane"
-    #"ToeSegmentation1"
-    #"Symbols"
-    #"Wine"
-    #"ShapeletSim"
-    #"ToeSegmentation2"
-    #"BeetleFly"
-    #"BirdChicken"
-    #"MiddlePhalanxTW"
-    #"DistalPhalanxTW"
-    #"MiddlePhalanxOutlineAgeGroup"
-    #"ProximalPhalanxOutlineAgeGroup"
-    #"DistalPhalanxOutlineAgeGroup"
-    #"ProximalPhalanxTW"
-    #"FacesUCR"
-    #"Beef"
-    #"MedicalImages"
-    #"Lightning7"
-    #"OliveOil"
-    #"ProximalPhalanxOutlineCorrect"
-    #"DistalPhalanxOutlineCorrect"
-    #"MiddlePhalanxOutlineCorrect"
-    #"Trace"
-    #"Meat"
-    #"SwedishLeaf"
-    #"Herring"
-    #"ECG5000"
-    #"Car"
-    #"FaceAll"
-    #"InsectWingbeatSound"
-    #"Adiac"
-    #"Lightning2"
-    #"Ham"
-    #"ChlorineConcentration"
-    #"WordSynonyms"
-    #"PhalangesOutlinesCorrect"
-    #"TwoPatterns"
-    #"Fish"
-    #"OSULeaf"
-    #"Mallat"
-    #"Wafer"
-    #"FiftyWords"
-    #"CricketZ"
-    #"CricketX"
-    #"CricketY"
-    #"Strawberry"
-    #"Yoga"
-    #"CinCECGtorso"
-    #"Earthquakes"
-    #"Computers"
-    #"WormsTwoClass"
-    #"Worms"
-    #"UWaveGestureLibraryZ"
-    #"UWaveGestureLibraryY"
-    #"UWaveGestureLibraryX"
-    #"Haptics"
-    #"ShapesAll"
-    #"Phoneme"
-    #"LargeKitchenAppliances"
-    #"ScreenType"
-    #"SmallKitchenAppliances"
-    #"RefrigerationDevices"
-    #"AALTDChallenge"
-    #"InlineSkate"
-    #"ElectricDevices"
-    #"UWaveGestureLibraryAll"
-    #"StarLightCurves"
-    #"NonInvasiveFatalECGThorax1"
-    #"NonInvasiveFetalECGThorax1"
-    #"NonInvasiveFatalECGThorax2"
-    #"NonInvasiveFetalECGThorax2"
-    #"FordA"
-    #"FordB"
+    "ItalyPowerDemand",
+    "SonyAIBORobotSurface1",
+    "SonyAIBORobotSurface2",
+    "MoteStrain",
+    "TwoLeadECG",
+    "ECGFiveDays",
+    #"CBF",
+    #"GunPoint",
+    #"ECG200",
+    #"DiatomSizeReduction",
+    #"Coffee",
+    #"SyntheticControl",
+    #"ArrowHead",
+    #"FaceFour",
+    #"Plane",
+    #"ToeSegmentation1",
+    #"Symbols",
+    #"Wine",
+    #"ShapeletSim",
+    #"ToeSegmentation2",
+    #"BeetleFly",
+    #"BirdChicken",
+    #"MiddlePhalanxTW",
+    #"DistalPhalanxTW",
+    #"MiddlePhalanxOutlineAgeGroup",
+    #"ProximalPhalanxOutlineAgeGroup",
+    #"DistalPhalanxOutlineAgeGroup",
+    #"ProximalPhalanxTW",
+    #"FacesUCR",
+    #"Beef",
+    #"MedicalImages",
+    #"Lightning7",
+    #"OliveOil",
+    #"ProximalPhalanxOutlineCorrect",
+    #"DistalPhalanxOutlineCorrect",
+    #"MiddlePhalanxOutlineCorrect",
+    #"Trace",
+    #"Meat",
+    #"SwedishLeaf",
+    #"Herring",
+    #"ECG5000",
+    #"Car",
+    #"FaceAll",
+    #"InsectWingbeatSound",
+    #"Adiac",
+    #"Lightning2",
+    #"Ham",
+    #"ChlorineConcentration",
+    #"WordSynonyms",
+    #"PhalangesOutlinesCorrect",
+    #"TwoPatterns",
+    #"Fish",
+    #"OSULeaf",
+    #"Mallat",
+    #"Wafer",
+    #"FiftyWords",
+    #"CricketZ",
+    #"CricketX",
+    #"CricketY",
+    #"Strawberry",
+    #"Yoga",
+    #"CinCECGtorso",
+    #"Earthquakes",
+    #"Computers",
+    #"WormsTwoClass",
+    #"Worms",
+    #"UWaveGestureLibraryZ",
+    #"UWaveGestureLibraryY",
+    #"UWaveGestureLibraryX",
+    #"Haptics",
+    #"ShapesAll",
+    #"Phoneme",
+    #"LargeKitchenAppliances",
+    #"ScreenType",
+    #"SmallKitchenAppliances",
+    #"RefrigerationDevices",
+    #"AALTDChallenge",
+    #"InlineSkate",
+    #"ElectricDevices",
+    #"UWaveGestureLibraryAll",
+    #"StarLightCurves",
+    #"NonInvasiveFatalECGThorax1",
+    #"NonInvasiveFetalECGThorax1",
+    #"NonInvasiveFatalECGThorax2",
+    #"NonInvasiveFetalECGThorax2",
+    #"FordA",
+    #"FordB",
     #"HandOutlines"
 ]
 
+data_loader = UCR_UEA_datasets()
+
 for dataset in datasets:
+    print(dataset)
     X_train, y_train, X_test, y_test = data_loader.load_dataset(dataset)
 
     X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1]))
@@ -383,3 +377,51 @@ for dataset in datasets:
         map_dict[c] = j
     y_train = pd.Series(y_train).map(map_dict).values
     y_test = pd.Series(y_test).map(map_dict).values
+
+    # Create the extractor & determine min and max shapelet length heuristically
+    extractor = SAXExtractor(alphabet_size=4, sax_length=16, nr_candidates=100, 
+                              iterations=5, mask_size=3)
+    _min, _max = estimate_min_max(X_train, y_train, extractor)
+
+    # Extract shapelets using Shapelet Tree and fit RF
+    tree_shapelets = extract_shapelets_with_tree(X_train, y_train, extractor,
+                                                 _min, _max)
+    shap_transformer = ShapeletTransformer(method=extractor, min_len=_min, 
+                                           max_len=_max, metric=other_util.calculate_ig)
+    shap_transformer.shapelets = [np.array(x) for x in tree_shapelets]
+
+    X_distances_train = shap_transformer.transform(X_train)
+    X_distances_test = shap_transformer.transform(X_test)
+
+    rf = GridSearchCV(
+      RandomForestClassifier(random_state=1337),
+      {'n_estimators': [5, 10, 50, 100, 250, 500]}
+    )
+    rf.fit(X_distances_train, y_train)
+
+    # Write away the predictions + a plot from all shapelets
+    rf_preds = pd.DataFrame(rf.predict_proba(X_distances_test))
+    rf_preds.to_csv('results/dependent_vs_independent/{}_rf_preds_tree.csv'.format(dataset['train']['name']))
+    with open('results/dependent_vs_independent/{}_shaps_tree.txt'.format(dataset['train']['name']), 'w') as ofp:
+        for shapelet in tree_shapelets:
+            ofp.write(str(shapelet)+'\n')
+
+    # Do the same, but extract the shapelets in a single pass (features//2 shapelets)
+    shap_transformer = ShapeletTransformer(method=extractor, min_len=_min, metric=other_util.calculate_ig,
+                                           max_len=_max, nr_shapelets=dataset['train']['n_features']//2)
+    shap_transformer.fit(X_train, y_train)
+    shap_transformer.shapelets = [np.array(x) for x in shap_transformer.shapelets]
+    X_distances_train = shap_transformer.transform(X_train)
+    X_distances_test = shap_transformer.transform(X_test)
+
+    rf = GridSearchCV(
+      RandomForestClassifier(random_state=1337),
+      {'n_estimators': [5, 10, 50, 100, 250, 500]}
+    )
+    rf.fit(X_distances_train, y_train)
+
+    rf_preds = pd.DataFrame(rf.predict_proba(X_distances_test))
+    rf_preds.to_csv('results/dependent_vs_independent/{}_rf_preds_transform.csv'.format(dataset['train']['name']))
+    with open('results/dependent_vs_independent/{}_shaps_transform.txt'.format(dataset['train']['name']), 'w') as ofp:
+        for shapelet in shap_transformer.shapelets:
+            ofp.write(str(shapelet)+'\n')
