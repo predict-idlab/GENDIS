@@ -1,6 +1,8 @@
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
 from sklearn.utils import check_array, check_X_y
 from sklearn.utils.validation import check_is_fitted
+from sklearn.model_selection import GridSearchCV
+from sklearn.linear_model import LogisticRegression
 import numpy as np
 import pandas as pd
 from collections import Counter
@@ -393,35 +395,43 @@ for dataset in datasets:
     X_distances_train = shap_transformer.transform(X_train)
     X_distances_test = shap_transformer.transform(X_test)
 
-    rf = GridSearchCV(
-      RandomForestClassifier(random_state=1337),
-      {'n_estimators': [5, 10, 50, 100, 250, 500]}
-    )
-    rf.fit(X_distances_train, y_train)
+    lr = GridSearchCV(
+            LogisticRegression(random_state=1337), 
+            {
+              'penalty': ['l1', 'l2'], 
+              'C': [10**i for i in range(-2, 6)] + [5**i for i in range(-2, 6)],
+              'class_weight': [None, 'balanced']
+            }
+        )
+    lr.fit(X_distances_train, y_train)
 
     # Write away the predictions + a plot from all shapelets
-    rf_preds = pd.DataFrame(rf.predict_proba(X_distances_test))
-    rf_preds.to_csv('results/dependent_vs_independent/{}_rf_preds_tree.csv'.format(dataset['train']['name']))
-    with open('results/dependent_vs_independent/{}_shaps_tree.txt'.format(dataset['train']['name']), 'w') as ofp:
+    lr_preds = pd.DataFrame(lr.predict_proba(X_distances_test))
+    lr_preds.to_csv('results/dependent_vs_independent/{}_tree_lr_proba.csv'.format(dataset))
+    with open('results/dependent_vs_independent/{}_shaps_tree.txt'.format(dataset), 'w') as ofp:
         for shapelet in tree_shapelets:
             ofp.write(str(shapelet)+'\n')
 
     # Do the same, but extract the shapelets in a single pass (features//2 shapelets)
     shap_transformer = ShapeletTransformer(method=extractor, min_len=_min, metric=other_util.calculate_ig,
-                                           max_len=_max, nr_shapelets=dataset['train']['n_features']//2)
+                                           max_len=_max, nr_shapelets=X_train.shape[1]//2)
     shap_transformer.fit(X_train, y_train)
     shap_transformer.shapelets = [np.array(x) for x in shap_transformer.shapelets]
     X_distances_train = shap_transformer.transform(X_train)
     X_distances_test = shap_transformer.transform(X_test)
 
-    rf = GridSearchCV(
-      RandomForestClassifier(random_state=1337),
-      {'n_estimators': [5, 10, 50, 100, 250, 500]}
-    )
-    rf.fit(X_distances_train, y_train)
+    lr = GridSearchCV(
+            LogisticRegression(random_state=1337), 
+            {
+              'penalty': ['l1', 'l2'], 
+              'C': [10**i for i in range(-2, 6)] + [5**i for i in range(-2, 6)],
+              'class_weight': [None, 'balanced']
+            }
+        )
+    lr.fit(X_distances_train, y_train)
 
-    rf_preds = pd.DataFrame(rf.predict_proba(X_distances_test))
-    rf_preds.to_csv('results/dependent_vs_independent/{}_rf_preds_transform.csv'.format(dataset['train']['name']))
-    with open('results/dependent_vs_independent/{}_shaps_transform.txt'.format(dataset['train']['name']), 'w') as ofp:
+    lr_preds = pd.DataFrame(lr.predict_proba(X_distances_test))
+    lr_preds.to_csv('results/dependent_vs_independent/{}_transform_lr_proba.csv'.format(dataset))
+    with open('results/dependent_vs_independent/{}_shaps_transform.txt'.format(dataset), 'w') as ofp:
         for shapelet in shap_transformer.shapelets:
             ofp.write(str(shapelet)+'\n')
