@@ -28,6 +28,7 @@ import ast
 # Scikit-learn
 from sklearn.metrics import accuracy_score
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import GridSearchCV
 
 def parse_shapelets(shapelets):
     shapelets = shapelets.replace(']', '],')[:-2]
