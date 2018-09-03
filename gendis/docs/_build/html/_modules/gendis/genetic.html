@@ -63,6 +63,7 @@
 <span class="kn">from</span> <span class="nn">pathos.multiprocessing</span> <span class="k">import</span> <span class="n">ProcessingPool</span> <span class="k">as</span> <span class="n">Pool</span>
 
 <span class="c1"># ML</span>
+<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="k">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span>
 <span class="kn">from</span> <span class="nn">sklearn.utils</span> <span class="k">import</span> <span class="n">check_array</span>
 <span class="kn">from</span> <span class="nn">sklearn.utils.validation</span> <span class="k">import</span> <span class="n">check_is_fitted</span>
 <span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="k">import</span> <span class="n">LogisticRegression</span>
@@ -75,7 +76,7 @@
 <span class="c1"># Ignore warnings</span>
 <span class="kn">import</span> <span class="nn">warnings</span><span class="p">;</span> <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="GeneticExtractor"><a class="viewcode-back" href="../../gendis.html#gendis.genetic.GeneticExtractor">[docs]</a><span class="k">class</span> <span class="nc">GeneticExtractor</span><span class="p">():</span>
+<div class="viewcode-block" id="GeneticExtractor"><a class="viewcode-back" href="../../gendis.html#gendis.genetic.GeneticExtractor">[docs]</a><span class="k">class</span> <span class="nc">GeneticExtractor</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Feature selection with genetic algorithm.</span>
 
 <span class="sd">    Parameters</span>
