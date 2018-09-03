@@ -1,0 +1,10 @@
+deap == 1.2.2
+matplotlib == 2.1.2
+numpy == 1.14.5
+pandas == 0.23.0
+pathos == 0.2.2
+scipy == 1.1.0
+sklearn == 0.0
+tqdm == 4.23.2
+nose2 == 0.8.0
+terminaltables==3.1.0
