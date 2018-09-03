@@ -45,8 +45,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.autoclass'
+    'sphinx.ext.autosummary'
 ]
 
 autodoc_mock_imports = ['_tkinter']
