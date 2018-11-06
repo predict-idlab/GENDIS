@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.spatial.distance import euclidean
+from functools import lru_cache
 
 def z_norm(x):
     """Normalize time series such that it has zero mean and unit variance
@@ -12,6 +13,7 @@ def z_norm(x):
     return (x - mu_x) / sigma_x
 
 
+@lru_cache(maxsize=4096)
 def sdist_no_norm(x, y):
     """No value normalization and no length normalization is applied
     >>> np.around(sdist_no_norm([1, 1, 1, 1, 1], [0, 0, 0]), 5)
@@ -25,6 +27,7 @@ def sdist_no_norm(x, y):
     return min_dist 
 
 
+@lru_cache(maxsize=4096)
 def sdist(x, y):
     """A distance metric, where each subseries and timeseries are first
     z-normalized before calculating euclidean distance. We not apply

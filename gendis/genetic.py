@@ -35,7 +35,7 @@ from sklearn.model_selection import StratifiedKFold, cross_val_predict
 from sklearn.metrics import log_loss
 
 # Util functions
-import gendis.util as util
+import util
 
 # Ignore warnings
 import warnings; warnings.filterwarnings('ignore')
@@ -258,9 +258,9 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
                 ts = X[k]
                 for j in range(len(shapelets)):
                     if self.normed:
-                        dist = util.sdist(shapelets[j].flatten(), ts)
+                        dist = util.sdist(tuple(shapelets[j].flatten()), tuple(ts))
                     else:
-                        dist = util.sdist_no_norm(shapelets[j].flatten(), ts)
+                        dist = util.sdist_no_norm(tuple(shapelets[j].flatten()), tuple(ts))
                     D[k, j] = dist
 
                 
@@ -503,9 +503,9 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
         for smpl_idx, sample in enumerate(X):
             for shap_idx, shapelet in enumerate(self.shapelets):
                 if self.normed:
-                    dist = util.sdist(shapelet.flatten(), sample)
+                    dist = util.sdist(tuple(shapelet.flatten()), tuple(sample))
                 else:
-                    dist = util.sdist_no_norm(shapelet.flatten(), sample)
+                    dist = util.sdist_no_norm(tuple(shapelet.flatten()), tuple(sample))
                 D[smpl_idx, shap_idx] = dist
 
         return D
