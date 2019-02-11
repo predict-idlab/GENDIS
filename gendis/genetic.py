@@ -1,5 +1,5 @@
 # Standard lib
-from collections import defaultdict, Counter
+from collections import defaultdict, Counter, OrderedDict
 import array
 import time
 
@@ -7,6 +7,8 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+
+#np.random.seed(1337)
 
 # Serialization
 import pickle
@@ -32,13 +34,39 @@ from sklearn.utils import check_array
 from sklearn.utils.validation import check_is_fitted
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold, cross_val_predict
-from sklearn.metrics import log_loss
+from sklearn.metrics import log_loss, accuracy_score
+from pairwise_dist import _pdist
+
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.neighbors import KernelDensity
+from scipy.stats import entropy
 
 # Util functions
 import util
 
 # Ignore warnings
 import warnings; warnings.filterwarnings('ignore')
+
+class LRUCache:
+    def __init__(self, capacity):
+        self.capacity = capacity
+        self.cache = OrderedDict()
+
+    def get(self, key):
+        try:
+            value = self.cache.pop(key)
+            self.cache[key] = value
+            return value
+        except KeyError:
+            return None
+
+    def set(self, key, value):
+        try:
+            self.cache.pop(key)
+        except KeyError:
+            if len(self.cache) >= self.capacity:
+                self.cache.popitem(last=False)
+        self.cache[key] = value
 
 class GeneticExtractor(BaseEstimator, TransformerMixin):
     """Feature selection with genetic algorithm.
@@ -108,16 +136,13 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
     1.0
     """
     def __init__(self, population_size=50, iterations=25, verbose=False, 
-                 normed=False, add_noise_prob=0.4, add_shapelet_prob=0.4, 
-                 wait=10, plot=None, remove_shapelet_prob=0.4, 
-                 crossover_prob=0.66, n_jobs=4):
+                 normed=False, mutation_prob=0.1, wait=10, plot=None,
+                 crossover_prob=0.4, n_jobs=4):
         # Hyper-parameters
         self.population_size = population_size
         self.iterations = iterations
         self.verbose = verbose
-        self.add_noise_prob = add_noise_prob
-        self.add_shapelet_prob = add_shapelet_prob
-        self.remove_shapelet_prob = remove_shapelet_prob
+        self.mutation_prob = mutation_prob
         self.crossover_prob = crossover_prob
         self.plot = plot
         self.wait = wait
@@ -150,7 +175,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
 
         return y
 
-    def fit(self, X, y):
+    def fit(self, X, y, max_len=64):
         """Extract shapelets from the provided timeseries and labels.
 
         Parameters
@@ -180,12 +205,14 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
         # Individual are lists (of shapelets (list))
         creator.create("Individual", list, fitness=creator.FitnessMax)
 
+        cache = LRUCache(2048)
+
         def random_shapelet(n_shapelets):
             """Extract a random subseries from the training set"""
             shaps = []
             for _ in range(n_shapelets):
                 rand_row = np.random.randint(X.shape[0])
-                rand_length = np.random.randint(4, self._min_length)
+                rand_length = np.random.randint(4, max_len)
                 rand_col = np.random.randint(self._min_length - rand_length)
                 shaps.append(X[rand_row][rand_col:rand_col+rand_length])
             if n_shapelets > 1:
@@ -193,7 +220,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             else:
                 return np.array(shaps[0])
 
-        def kmeans(n_shapelets, shp_len, n_draw=1000):
+        def kmeans(n_shapelets, shp_len, n_draw=25):
             """Sample subseries from the timeseries and apply K-Means on them"""
             # Sample `n_draw` subseries of length `shp_len`
             n_ts, sz = len(X), self._min_length
@@ -214,7 +241,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             """Extract some motifs from sampled timeseries"""
             shaps = []
             for _ in range(n_shapelets):
-                rand_length = np.random.randint(4, self._min_length)
+                rand_length = np.random.randint(4, max_len)
                 subset_idx = np.random.choice(range(len(X)), 
                                               size=n_draw, 
                                               replace=True)
@@ -232,42 +259,54 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
         def create_individual(n_shapelets=None):
             """Generate a random shapelet set"""
             if n_shapelets is None:
-                ub = int(np.sqrt(self._min_length)) + 1
+                ub = int(np.sqrt(self._min_length)) + 1#len(X)#
                 n_shapelets = np.random.randint(2, ub)
             
             rand = np.random.random()
             if n_shapelets > 1:
-                if rand < 1./3.:
-                    rand_length = np.random.randint(4, self._min_length)
+                if rand < 1./2.:
+                    rand_length = np.random.randint(4, max_len)
                     return kmeans(n_shapelets, rand_length)
-                elif 1./3. < rand < 2./3.:
-                    return motif(n_shapelets)
                 else:
                     return random_shapelet(n_shapelets)
             else:
-                if rand < 0.5:
-                    return motif(n_shapelets)
-                else:
-                    return random_shapelet(n_shapelets)
+                return random_shapelet(n_shapelets)
 
-        def cost(shapelets):
+        def cost(shapelets, verbose=False):
             """Calculate the fitness of an individual/shapelet set"""
             start = time.time()
             D = np.zeros((len(X), len(shapelets)))
-            for k in range(len(X)):
-                ts = X[k]
-                for j in range(len(shapelets)):
-                    if self.normed:
-                        dist = util.sdist(tuple(shapelets[j].flatten()), tuple(ts))
-                    else:
-                        dist = util.sdist_no_norm(tuple(shapelets[j].flatten()), tuple(ts))
-                    D[k, j] = dist
 
-                
-            lr = LogisticRegression()
-            skf = StratifiedKFold(n_splits=4, shuffle=True, random_state=1337)
-            preds = cross_val_predict(lr, D, y, method='predict_proba', cv=skf) 
-            cv_score = -log_loss(y, preds)
+            # First check if we already calculated distances for a shapelet
+            for shap_ix, shap in enumerate(shapelets):
+                shap_hash = hash(tuple(shap.flatten()))
+                cache_val = cache.get(shap_hash)
+                if cache_val is not None:
+                    D[:, shap_ix] = cache_val
+
+            # Fill up the 0 entries
+            _pdist(X, [shap.flatten() for shap in shapelets], D)
+
+            # Fill up our cache
+            for shap_ix, shap in enumerate(shapelets):
+                shap_hash = hash(tuple(shap.flatten()))
+                cache.set(shap_hash, D[:, shap_ix])
+
+            lr = LogisticRegression(multi_class='ovr')
+            lr.fit(D, y)
+            preds = lr.predict_proba(D)
+            #shap_lens = sum([len(x) for x in shapelets])
+            cv_score = -log_loss(y, preds)# - 0.01*shap_lens
+
+            if verbose:
+                lr = LogisticRegression(multi_class='ovr')
+                lr.fit(D, y)
+                print(lr.coef_)
+                preds = lr.predict_proba(D)
+                hard_preds = lr.predict(D)
+                print('Accuracy = {}'.format(accuracy_score(y, hard_preds)))
+                print('Logloss = {}'.format(log_loss(y, preds)))
+                print('{} shapelets, total length = {}'.format(len(shapelets), sum([len(x) for x in shapelets])))
 
             return (cv_score, sum([len(x) for x in shapelets]))
 
@@ -290,6 +329,16 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             if len(shapelets) > 1:
                 rand_shapelet = np.random.randint(len(shapelets))
                 shapelets.pop(rand_shapelet)
+
+            return shapelets,
+
+        def mask_shapelet(shapelets):
+            """Remove a random shapelet from the individual"""
+            rand_shapelet = np.random.randint(len(shapelets))
+            if len(shapelets[rand_shapelet]) > 4:
+                rand_start = np.random.randint(len(shapelets[rand_shapelet]) - 4)
+                rand_end = np.random.randint(rand_start + 4, len(shapelets[rand_shapelet]))
+                shapelets[rand_shapelet] = shapelets[rand_shapelet][rand_start:rand_end]
 
             return shapelets,
 
@@ -337,6 +386,25 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             
             return ind1, ind2
 
+        def shap_point_crossover(ind1, ind2):
+            new_ind1, new_ind2 = [], []
+            np.random.shuffle(ind1)
+            np.random.shuffle(ind2)
+
+            for shap1, shap2 in zip(ind1, ind2):
+                if len(shap1) > 4 and len(shap2) > 4:
+                    shap1, shap2 = tools.cxOnePoint(list(shap1), list(shap2))
+                new_ind1.append(shap1)
+                new_ind2.append(shap2)
+
+
+            if len(ind1) < len(ind2):
+                new_ind2 += ind2[len(ind1):]
+            else:
+                new_ind1 += ind1[len(ind2):]
+
+            return new_ind1, new_ind2
+
         # Register all operations in the toolbox
         toolbox = base.Toolbox()
 
@@ -350,9 +418,11 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
         # Register all our operations to the DEAP toolbox
         toolbox.register("merge", merge_crossover)
         toolbox.register("cx", point_crossover)
+        toolbox.register("shapcx", shap_point_crossover)
         toolbox.register("mutate", add_noise)
         toolbox.register("add", add_shapelet)
         toolbox.register("remove", remove_shapelet)
+        toolbox.register("mask", mask_shapelet)
         toolbox.register("individual",  tools.initIterate, creator.Individual, 
                          create_individual)
         toolbox.register("population", tools.initRepeat, list, 
@@ -368,10 +438,12 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
         stats.register("max", np.max)
 
         # Initialize the population and calculate their initial fitness values
+        start = time.time()
         pop = toolbox.population(n=self.population_size)
         fitnesses = list(map(toolbox.evaluate, pop))
         for ind, fit in zip(pop, fitnesses):
             ind.fitness.values = fit
+        print('Initializing population took {} seconds...'.format(time.time() - start))
 
         # Keep track of the best iteration, in order to do stop after `wait`
         # generations without improvement
@@ -415,47 +487,60 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
                     plt.pause(0.001)
 
             # Iterate over all individuals and apply CX with certain prob
+            start = time.time()
             for child1, child2 in zip(offspring[::2], offspring[1::2]):
-                try:
-                    if np.random.random() < self.crossover_prob:
-                        toolbox.merge(child1, child2)
-                        del child1.fitness.values
-                        del child2.fitness.values
-                    if np.random.random() < self.crossover_prob:
-                        toolbox.cx(child1, child2)
-                        del child1.fitness.values
-                        del child2.fitness.values
-                except:
-                    raise
+                if np.random.random() < self.crossover_prob:
+                    toolbox.merge(child1, child2)
+                    del child1.fitness.values
+                    del child2.fitness.values
+                if np.random.random() < self.crossover_prob:
+                    toolbox.cx(child1, child2)
+                    del child1.fitness.values
+                    del child2.fitness.values
+                if np.random.random() < self.crossover_prob:
+                    toolbox.shapcx(child1, child2)
+                    del child1.fitness.values
+                    del child2.fitness.values
+            print('Crossover operations took {} seconds'.format(time.time() - start))
 
             # Apply mutation to each individual
+            start = time.time()
             for idx, indiv in enumerate(offspring):
-                if np.random.random() < self.add_noise_prob:
-                    toolbox.mutate(indiv)
-                    del indiv.fitness.values
-                if np.random.random() < self.add_shapelet_prob:
+                if np.random.random() < self.mutation_prob:
                     toolbox.add(indiv)
                     del indiv.fitness.values
-                if np.random.random() < self.remove_shapelet_prob:
+                if np.random.random() < self.mutation_prob:
                     toolbox.remove(indiv)
                     del indiv.fitness.values
+                if np.random.random() < self.mutation_prob:
+                    toolbox.mask(indiv)
+                    del indiv.fitness.values
+            print('Mutation operations took {} seconds'.format(time.time() - start))
 
-            # Update the fitness values         
+            # Update the fitness values
+            start = time.time()
             invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
             fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
             for ind, fit in zip(invalid_ind, fitnesses):
                 ind.fitness.values = fit
+            print('Calculating fitnesses for {} of {} inviduals took {} seconds...'.format(len(invalid_ind), len(pop), time.time() - start))
 
             # Replace population and update hall of fame & statistics
+            start = time.time()
             new_pop = toolbox.select(offspring, self.population_size - 1)
             fittest_ind = tools.selBest(pop + offspring, 1)
             pop[:] = new_pop + fittest_ind
             it_stats = stats.compile(pop)
+            print('Selection took {} seconds'.format(time.time() - start))
+
+            print('Current population set sizes:', [len(x) for x in pop])
 
             # Print our statistics
             if self.verbose:
                 if it == 1:
+                    # Print the header of the statistics
                     print('it\t\tavg\t\tstd\t\tmax\t\ttime')
+
                 print('{}\t\t{}\t\t{}\t\t{}\t{}'.format(
                     it, 
                     np.around(it_stats['avg'], 4), 
@@ -469,6 +554,15 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
                 best_it = it
                 best_score = it_stats['max']
                 best_ind = tools.selBest(pop + offspring, 1)
+                cost(best_ind[0], verbose=True)
+
+                # Overwrite self.shapelets everytime so we can
+                # pre-emptively stop the genetic algorithm
+                best_shapelets = []
+                for shap in best_ind[0]:
+                    best_shapelets.append(shap.flatten())
+                self.shapelets = best_shapelets
+
 
             it += 1
 
@@ -503,9 +597,9 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
         for smpl_idx, sample in enumerate(X):
             for shap_idx, shapelet in enumerate(self.shapelets):
                 if self.normed:
-                    dist = util.sdist(tuple(shapelet.flatten()), tuple(sample))
+                    dist = util.sdist(shapelet.flatten(), sample)
                 else:
-                    dist = util.sdist_no_norm(tuple(shapelet.flatten()), tuple(sample))
+                    dist = util.sdist_no_norm(shapelet.flatten(), sample)
                 D[smpl_idx, shap_idx] = dist
 
         return D
