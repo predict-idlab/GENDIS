@@ -164,5 +164,6 @@ for dataset in datasets:
 	            'results/lts_vs_genetic/{}_genetic_shapelets_predictions_{}.csv'.format(dataset, int(time.time())),
 	            'results/lts_vs_genetic/{}_genetic_runtime_{}.csv'.format(dataset, int(time.time()))
 	    )
+	    print(sorted(data_loader.baseline_accuracy(dataset)[dataset].items(), key=lambda x: -x[1]))
 	except:
 		print('Dataset {} failed...'.format(dataset))

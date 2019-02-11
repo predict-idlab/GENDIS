@@ -188,7 +188,10 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             raise Exception('Time series should be of at least length 4!')
 
         if max_len is None:
-            max_len = len(X[0]) // 4
+            if len(X[0]) > 4*self._min_length:
+                max_len = len(X[0]) // 4
+            else:
+                max_len = len(X[0])
 
         # Sci-kit learn check for label vector.
         check_array(y)
@@ -297,7 +300,6 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             if verbose:
                 lr = LogisticRegression(multi_class='ovr')
                 lr.fit(D, y)
-                print(lr.coef_)
                 preds = lr.predict_proba(D)
                 hard_preds = lr.predict(D)
                 print('Accuracy = {}'.format(accuracy_score(y, hard_preds)))
