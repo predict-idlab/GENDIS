@@ -7,5 +7,5 @@ install:
   - pip install -r requirements.txt
 script:
   - python setup.py install
-  - nose2 -v gendis
+  - cd gendis; nose2 -v 
   - python -m doctest -v gendis/genetic.py
