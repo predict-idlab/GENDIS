@@ -271,7 +271,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             else:
                 return random_shapelet(n_shapelets)
 
-        def cost(shapelets, verbose=False):
+        def cost(shapelets):
             """Calculate the fitness of an individual/shapelet set"""
             start = time.time()
             D = np.zeros((len(X), len(shapelets)))
@@ -297,7 +297,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             #shap_lens = sum([len(x) for x in shapelets])
             cv_score = -log_loss(y, preds)# - 0.01*shap_lens
 
-            if verbose:
+            if self.verbose:
                 lr = LogisticRegression(multi_class='ovr')
                 lr.fit(D, y)
                 preds = lr.predict_proba(D)
@@ -441,7 +441,8 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
         fitnesses = list(map(toolbox.evaluate, pop))
         for ind, fit in zip(pop, fitnesses):
             ind.fitness.values = fit
-        print('Initializing population took {} seconds...'.format(time.time() - start))
+        if self.verbose:
+            print('Initializing population took {} seconds...'.format(time.time() - start))
 
         # Keep track of the best iteration, in order to do stop after `wait`
         # generations without improvement
@@ -499,7 +500,8 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
                     toolbox.shapcx(child1, child2)
                     del child1.fitness.values
                     del child2.fitness.values
-            print('Crossover operations took {} seconds'.format(time.time() - start))
+            if self.verbose:
+                print('Crossover operations took {} seconds'.format(time.time() - start))
 
             # Apply mutation to each individual
             start = time.time()
@@ -513,7 +515,8 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
                 if np.random.random() < self.mutation_prob:
                     toolbox.mask(indiv)
                     del indiv.fitness.values
-            print('Mutation operations took {} seconds'.format(time.time() - start))
+            if self.verbose:
+                print('Mutation operations took {} seconds'.format(time.time() - start))
 
             # Update the fitness values
             start = time.time()
@@ -521,7 +524,8 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
             for ind, fit in zip(invalid_ind, fitnesses):
                 ind.fitness.values = fit
-            print('Calculating fitnesses for {} of {} inviduals took {} seconds...'.format(len(invalid_ind), len(pop), time.time() - start))
+            if self.verbose:
+                print('Calculating fitnesses for {} of {} inviduals took {} seconds...'.format(len(invalid_ind), len(pop), time.time() - start))
 
             # Replace population and update hall of fame & statistics
             start = time.time()
@@ -529,9 +533,10 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             fittest_ind = tools.selBest(pop + offspring, 1)
             pop[:] = new_pop + fittest_ind
             it_stats = stats.compile(pop)
-            print('Selection took {} seconds'.format(time.time() - start))
+            if self.verbose:
+                print('Selection took {} seconds'.format(time.time() - start))
 
-            print('Current population set sizes:', [len(x) for x in pop])
+                print('Current population set sizes:', [len(x) for x in pop])
 
             # Print our statistics
             if self.verbose:
@@ -552,7 +557,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
                 best_it = it
                 best_score = it_stats['max']
                 best_ind = tools.selBest(pop + offspring, 1)
-                cost(best_ind[0], verbose=True)
+                cost(best_ind[0])
 
                 # Overwrite self.shapelets everytime so we can
                 # pre-emptively stop the genetic algorithm
