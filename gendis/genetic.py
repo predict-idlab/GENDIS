@@ -8,8 +8,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-#np.random.seed(1337)
-
 # Serialization
 import pickle
 
@@ -33,16 +31,8 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_array
 from sklearn.utils.validation import check_is_fitted
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import StratifiedKFold, cross_val_predict
 from sklearn.metrics import log_loss, accuracy_score
 from pairwise_dist import _pdist
-
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.neighbors import KernelDensity
-from scipy.stats import entropy
-
-# Util functions
-import util
 
 # Ignore warnings
 import warnings; warnings.filterwarnings('ignore')
@@ -175,7 +165,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
 
         return y
 
-    def fit(self, X, y, max_len=64):
+    def fit(self, X, y, max_len=16):
         """Extract shapelets from the provided timeseries and labels.
 
         Parameters
@@ -594,13 +584,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
 
         # Construct (|X| x |S|) distance matrix
         D = np.zeros((len(X), len(self.shapelets)))
-        for smpl_idx, sample in enumerate(X):
-            for shap_idx, shapelet in enumerate(self.shapelets):
-                if self.normed:
-                    dist = util.sdist(shapelet.flatten(), sample)
-                else:
-                    dist = util.sdist_no_norm(shapelet.flatten(), sample)
-                D[smpl_idx, shap_idx] = dist
+        _pdist(X, [shap.flatten() for shap in self.shapelets], D)
 
         return D
 
