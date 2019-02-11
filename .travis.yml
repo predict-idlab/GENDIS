@@ -1,11 +1,10 @@
 language: python
 python:
-  - "3.5"
   - "3.6"
 install:
   - pip install cython
   - pip install -r requirements.txt
+  - python setup.py build_ext --inplace
 script:
-  - python setup.py install
-  - cd gendis; nose2 -v 
+  - nose2 -v gendis
   - python -m doctest -v gendis/genetic.py

@@ -168,7 +168,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
 
         return y
 
-    def fit(self, X, y, max_len=16):
+    def fit(self, X, y, max_len=None):
         """Extract shapelets from the provided timeseries and labels.
 
         Parameters
@@ -186,6 +186,9 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
         
         if self._min_length <= 4:
             raise Exception('Time series should be of at least length 4!')
+
+        if max_len is None:
+            max_len = len(X[0]) // 4
 
         # Sci-kit learn check for label vector.
         check_array(y)
