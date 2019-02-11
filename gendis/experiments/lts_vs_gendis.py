@@ -36,14 +36,18 @@ def fit_lr(X_distances_train, y_train, X_distances_test, y_test, out_path):
               'class_weight': [None, 'balanced']
             }
         )
-
     lr.fit(X_distances_train, y_train)
     
     hard_preds = lr.predict(X_distances_test)
     proba_preds = lr.predict_proba(X_distances_test)
+    
+    hard_preds_train = lr.predict(X_distances_train)
+    proba_preds_train = lr.predict_proba(X_distances_train)
 
-    print("[LR] Accuracy = {}".format(accuracy_score(y_test, hard_preds)))
-    print("[LR] Logloss = {}".format(log_loss(y_test, proba_preds)))
+    print("[LR] TRAIN Accuracy = {}".format(accuracy_score(y_train, hard_preds_train)))
+    print("[LR] TRAIN Logloss = {}".format(log_loss(y_train, proba_preds_train)))
+    print("[LR] TEST Accuracy = {}".format(accuracy_score(y_test, hard_preds)))
+    print("[LR] TEST Logloss = {}".format(log_loss(y_test, proba_preds)))
 
     hard_preds = pd.DataFrame(hard_preds, columns=['prediction'])
     proba_preds = pd.DataFrame(proba_preds, columns=['proba_{}'.format(x) for x in set(list(y_train) + list(y_test))])
@@ -58,7 +62,7 @@ def lts_discovery(X_train, y_train, X_test, y_test,  nr_shap, l, r, reg, max_it,
     )
     
     clf = ShapeletModel(n_shapelets_per_size=shapelet_dict, 
-                        max_iter=max_it, verbose_level=0, batch_size=1,
+                        max_iter=max_it, verbose_level=1, batch_size=1,
                         optimizer='sgd', weight_regularizer=reg)
 
     start = time.time()
@@ -70,6 +74,9 @@ def lts_discovery(X_train, y_train, X_test, y_test,  nr_shap, l, r, reg, max_it,
         y_train
     )
     learning_time = time.time() - start
+
+    print([len(x) for x in clf.shapelets_])
+    print(clf.get_weights())
 
     print('Learning shapelets took {}s'.format(learning_time))
 
@@ -86,7 +93,7 @@ def lts_discovery(X_train, y_train, X_test, y_test,  nr_shap, l, r, reg, max_it,
     fit_lr(X_distances_train, y_train, X_distances_test, y_test, pred_out_path)
 
 def gendis_discovery(X_train, y_train, X_test, y_test, shap_out_path, pred_out_path, timing_out_path):
-    genetic_extractor = GeneticExtractor(verbose=True, population_size=50, iterations=50, wait=25)
+    genetic_extractor = GeneticExtractor(verbose=True, population_size=100, iterations=15, wait=5, plot=None)
     start = time.time()
     genetic_extractor.fit(X_train, y_train)
     genetic_time = time.time() - start
@@ -115,23 +122,23 @@ hyper_parameters_lts = {
 	#'Adiac': 					[0.3,  0.2,   3, 0.01, 10000],
 	#'Beef': 					[0.15, 0.125, 3, 0.01, 10000],
 	#'BeetleFly': 				[0.15, 0.125, 1, 0.01, 5000],
-	#'BirdChicken': 				[0.3,  0.075, 1, 0.1,  10000],
+    #'BirdChicken': 				[0.3,  0.075, 1, 0.1,  10000],
 	#'ChlorineConcentration':    [0.3,  0.2,   3, 0.01, 10000],
 	#'Coffee': 					[0.05, 0.075, 2, 0.01, 5000],
 	#'DiatomSizeReduction': 		[0.3,  0.175, 2, 0.01, 10000],
-	'ECGFiveDays': 				[0.05, 0.125, 2, 0.01, 10000],
+	#'ECGFiveDays': 				[0.05, 0.125, 2, 0.01, 10000],
 	#'FaceFour': 				[0.3,  0.175, 3, 1.0,  5000],
 	#'GunPoint': 				[0.15, 0.2,   3, 0.1,  10000],
 	#'ItalyPowerDemand':			[0.3,  0.2,   3, 0.01, 5000],
 	#'Lightning7': 				[0.05, 0.075, 3, 1,    5000],
 	#'MedicalImages': 			[0.3,  0.2,   2, 1,    10000],
-	'MoteStrain': 				[0.3,  0.2,   3, 1,    10000],
-	'SonyAIBORobotSurface1': 	[0.3,  0.125, 2, 0.01, 10000],
-	#'SonyAIBORobotSurface2': 	[0.3,  0.125, 2, 0.01, 10000],
-	'Symbols': 					[0.05, 0.175, 1, 0.1,  5000],
+	#'MoteStrain': 				[0.3,  0.2,   3, 1,    10000],
+	'SonyAIBORobotSurface1': 	[0.3,  0.125, 2, 0.01, 1000],
+	'SonyAIBORobotSurface2': 	[0.3,  0.125, 2, 0.01, 10000],
+	#'Symbols': 					[0.05, 0.175, 1, 0.1,  5000],
 	#'SyntheticControl': 		[0.15, 0.125, 3, 0.01, 5000],
 	#'Trace': 					[0.15, 0.125, 2, 0.1,  10000],
-	'TwoLeadECG': 				[0.3,  0.075, 1, 0.1,  10000]
+	#'TwoLeadECG': 				[0.3,  0.075, 1, 0.1,  10000]
 }
 
 result_vectors = []
@@ -157,11 +164,11 @@ for dataset in hyper_parameters_lts:
     nr_shap, l, r, reg, max_it = hyper_parameters_lts[dataset]
 
     # LTS Discovery & write away results to disk
-    lts_discovery(X_train, y_train, X_test, y_test, nr_shap, l, r, reg, max_it,
-            'results/lts_vs_genetic/{}_learned_shapelets_{}.txt'.format(dataset, int(time.time())), 
-            'results/lts_vs_genetic/{}_learned_shapelets_predictions_{}.csv'.format(dataset, int(time.time())), 
-            'results/lts_vs_genetic/{}_learned_runtime_{}.csv'.format(dataset, int(time.time()))
-    )
+    #lts_discovery(X_train, y_train, X_test, y_test, nr_shap, l, r, reg, max_it,
+    #        'results/lts_vs_genetic/{}_learned_shapelets_{}.txt'.format(dataset, int(time.time())), 
+    #        'results/lts_vs_genetic/{}_learned_shapelets_predictions_{}.csv'.format(dataset, int(time.time())), 
+    #        'results/lts_vs_genetic/{}_learned_runtime_{}.csv'.format(dataset, int(time.time()))
+    #)
 
     # GENDIS Discovery & write away results to disk
     gendis_discovery(X_train, y_train, X_test, y_test,  

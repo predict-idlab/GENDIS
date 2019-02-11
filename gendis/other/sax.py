@@ -88,6 +88,62 @@ def transform(timeseries, nr_windows, alphabet_size):
                       for ts in timeseries]
     return np.array(transformed_ts)
 
+def level2_bitmap():
+    return {
+        (0, 0): (0, 0),
+        (0, 1): (0, 1),
+        (0, 2): (1, 0),
+        (0, 3): (1, 1),
+        (1, 0): (0, 2),
+        (1, 1): (0, 3),
+        (1, 2): (1, 2),
+        (1, 3): (1, 3),
+        (2, 0): (2, 0),
+        (2, 1): (2, 1),
+        (2, 2): (3, 0),
+        (2, 3): (3, 1),
+        (3, 0): (2, 2),
+        (3, 1): (2, 3),
+        (3, 2): (3, 2),
+        (3, 3): (3, 3),
+    }
+
+def get_bitmap(train_timeseries, test_timeseries):
+    ts_mean = np.mean(train_timeseries) # Get mean of all ts values
+    ts_std = np.std(train_timeseries)
+
+    train_norm_ts = (train_timeseries - ts_mean) / ts_std
+    test_norm_ts = (test_timeseries - ts_mean) / ts_std
+
+    train_sax = []
+    for ts in train_norm_ts:
+        train_sax.append(transform([ts], len(ts), 4)[0])
+
+    test_sax = []
+    for ts in test_norm_ts:
+        test_sax.append(transform([ts], len(ts), 4)[0])
+
+    seq_to_idx = level2_bitmap()
+    print(seq_to_idx)
+
+    train_bmps = []
+    for ts in train_sax:
+        bmp = np.zeros((4, 4))
+        for i in range(len(ts) - 1):
+            print(ts[i:i+2], seq_to_idx[tuple(ts[i:i+2])])
+            bmp[seq_to_idx[tuple(ts[i:i+2])]] += 1
+        bmp /= np.sum(bmp)
+        train_bmps.append(bmp)
+
+    test_bmps = []
+    for ts in test_sax:
+        bmp = np.zeros((4, 4))
+        for i in range(len(ts) - 1):
+            bmp[seq_to_idx[tuple(ts[i:i+2])]] += 1
+        bmp /= np.sum(bmp)
+        test_bmps.append(bmp)
+
+    return train_bmps, test_bmps
 
 
 class SAXExtractor():

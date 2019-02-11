@@ -44,15 +44,15 @@ def test_accept_np_array():
 	genetic = GeneticExtractor(population_size=5, iterations=5)
 	genetic.fit(np_X, np_y)
 
-def test_accept_variable_length_arrays():
-	X = [
-		[0]*10, [0]*6, [0]*8, [0]*6,
-		[1]*8, [1]*7, [1]*8, [1]*5,
-	]
-	y = [0, 0, 0, 0, 1, 1, 1, 1]
+# def test_accept_variable_length_arrays():
+# 	X = [
+# 		[0]*10, [0]*6, [0]*8, [0]*6,
+# 		[1]*8, [1]*7, [1]*8, [1]*5,
+# 	]
+# 	y = [0, 0, 0, 0, 1, 1, 1, 1]
 
-	genetic = GeneticExtractor(population_size=5, iterations=5)
-	genetic.fit(X, y)
+# 	genetic = GeneticExtractor(population_size=5, iterations=5)
+# 	genetic.fit(X, y)
 
 def test_accept_float_labels():
 	X = [
