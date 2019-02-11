@@ -32,7 +32,7 @@ from sklearn.utils import check_array
 from sklearn.utils.validation import check_is_fitted
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import log_loss, accuracy_score
-from pairwise_dist import _pdist
+from gendis.pairwise_dist import _pdist
 
 # Ignore warnings
 import warnings; warnings.filterwarnings('ignore')
@@ -153,7 +153,10 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
         if isinstance(X, pd.DataFrame):
             X = X.values
 
-        return X
+        if X.dtype != object:
+            return X.view(np.float64)
+        else:
+            return X
 
     def _convert_y(self, y):
         # Map labels to [0, ..., C-1]
@@ -202,7 +205,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             shaps = []
             for _ in range(n_shapelets):
                 rand_row = np.random.randint(X.shape[0])
-                rand_length = np.random.randint(4, max_len)
+                rand_length = np.random.randint(4, min(self._min_length, max_len))
                 rand_col = np.random.randint(self._min_length - rand_length)
                 shaps.append(X[rand_row][rand_col:rand_col+rand_length])
             if n_shapelets > 1:
@@ -255,7 +258,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             rand = np.random.random()
             if n_shapelets > 1:
                 if rand < 1./2.:
-                    rand_length = np.random.randint(4, max_len)
+                    rand_length = np.random.randint(4, min(self._min_length, max_len))
                     return kmeans(n_shapelets, rand_length)
                 else:
                     return random_shapelet(n_shapelets)
