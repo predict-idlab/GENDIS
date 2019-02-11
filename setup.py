@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from setuptools import setup
+from Cython.Build import cythonize
 
 setup(name='GENDIS',
       version='1.0.9',
@@ -18,9 +19,10 @@ setup(name='GENDIS',
       	  'scipy==1.1.0',
       	  'sklearn==0.0',
       	  'tqdm==4.23.2',
-      	  'tslearn==0.1.18.3',
+      	  'tslearn==0.1.27',
           'nose2==0.8.0',
           'terminaltables==3.1.0'
       ],
       test_suite='nose2.collector.collector',
+      ext_modules = cythonize('gendis/pairwise_dist.pyx'),
      )
