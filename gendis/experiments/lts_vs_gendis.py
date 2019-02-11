@@ -136,8 +136,8 @@ hyper_parameters_lts = {
 	#'SonyAIBORobotSurface1': 	[0.3,  0.125, 2, 0.01, 1000],
 	#'SonyAIBORobotSurface2': 	[0.3,  0.125, 2, 0.01, 10000],
 	#'Symbols': 					[0.05, 0.175, 1, 0.1,  5000],
-	'SyntheticControl': 		[0.15, 0.125, 3, 0.01, 5000],
-	#'Trace': 					[0.15, 0.125, 2, 0.1,  10000],
+	#'SyntheticControl': 		[0.15, 0.125, 3, 0.01, 5000],
+	'Trace': 					[0.15, 0.125, 2, 0.1,  10000],
 	#'TwoLeadECG': 				[0.3,  0.075, 1, 0.1,  10000]
 }
 

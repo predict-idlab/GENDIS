@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from setuptools import setup
+import numpy as np
 from Cython.Build import cythonize
 
 setup(name='GENDIS',
@@ -25,4 +26,5 @@ setup(name='GENDIS',
       ],
       test_suite='nose2.collector.collector',
       ext_modules = cythonize('gendis/pairwise_dist.pyx'),
+      include_dirs=[np.get_include()]
      )
