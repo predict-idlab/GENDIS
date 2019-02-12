@@ -271,7 +271,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             else:
                 return random_shapelet(n_shapelets)
 
-        def cost(shapelets):
+        def cost(shapelets, verbose=False):
             """Calculate the fitness of an individual/shapelet set"""
             start = time.time()
             D = np.zeros((len(X), len(shapelets)))
@@ -297,7 +297,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             #shap_lens = sum([len(x) for x in shapelets])
             cv_score = -log_loss(y, preds)# - 0.01*shap_lens
 
-            if self.verbose:
+            if verbose and self.verbose:
                 lr = LogisticRegression(multi_class='ovr')
                 lr.fit(D, y)
                 preds = lr.predict_proba(D)
@@ -557,7 +557,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
                 best_it = it
                 best_score = it_stats['max']
                 best_ind = tools.selBest(pop + offspring, 1)
-                cost(best_ind[0])
+                cost(best_ind[0], verbose=True)
 
                 # Overwrite self.shapelets everytime so we can
                 # pre-emptively stop the genetic algorithm

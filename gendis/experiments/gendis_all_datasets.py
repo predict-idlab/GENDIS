@@ -48,19 +48,19 @@ def fit_lr(X_distances_train, y_train, X_distances_test, y_test, out_path):
     proba_preds.to_csv(out_path.split('.')[0]+'_lr_proba.csv')
 
 def fit_svm(X_distances_train, y_train, X_distances_test, y_test, out_path):
-    lr = GridSearchCV(
+    svc = GridSearchCV(
             SVC(probability=True, kernel='linear'), 
             {
               'C': [10**i for i in range(-2, 6)] + [5**i for i in range(-2, 6)]
             }
         )
-    lr.fit(X_distances_train, y_train)
+    svc.fit(X_distances_train, y_train)
     
-    hard_preds = lr.predict(X_distances_test)
-    proba_preds = lr.predict_proba(X_distances_test)
+    hard_preds = svc.predict(X_distances_test)
+    proba_preds = svc.predict_proba(X_distances_test)
     
-    hard_preds_train = lr.predict(X_distances_train)
-    proba_preds_train = lr.predict_proba(X_distances_train)
+    hard_preds_train = svc.predict(X_distances_train)
+    proba_preds_train = svc.predict_proba(X_distances_train)
 
     print("[SVM] TRAIN Accuracy = {}".format(accuracy_score(y_train, hard_preds_train)))
     print("[SVM] TRAIN Logloss = {}".format(log_loss(y_train, proba_preds_train)))
@@ -85,6 +85,9 @@ def fit_rf(X_distances_train, y_train, X_distances_test, y_test, out_path):
     
     hard_preds = rf.predict(X_distances_test)
     proba_preds = rf.predict_proba(X_distances_test)
+    
+    hard_preds_train = rf.predict(X_distances_train)
+    proba_preds_train = rf.predict_proba(X_distances_train)
 
     print("[RF] TRAIN Accuracy = {}".format(accuracy_score(y_train, hard_preds_train)))
     print("[RF] TRAIN Logloss = {}".format(log_loss(y_train, proba_preds_train)))
@@ -110,10 +113,10 @@ def gendis_discovery(X_train, y_train, X_test, y_test, shap_out_path, pred_out_p
             ofp.write(str(np.reshape(shap, (-1))) + '\n')
 
     with open(timing_out_path, 'w+') as ofp:
-        ofp.write(str(learning_time))
+        ofp.write(str(genetic_time))
 
-    X_distances_train = clf.transform(X_train)
-    X_distances_test = clf.transform(X_test)
+    X_distances_train = genetic_extractor.transform(X_train)
+    X_distances_test = genetic_extractor.transform(X_test)
 
     fit_lr(X_distances_train, y_train, X_distances_test, y_test, pred_out_path)
     fit_rf(X_distances_train, y_train, X_distances_test, y_test, pred_out_path)
@@ -145,25 +148,25 @@ datasets = ['ShakeGestureWiimoteZ', 'PLAID', 'PickupGestureWiimoteZ', 'GesturePe
             'StandWalkJump', 'HandOutlines', 'Rock', 'MotorImagery', 'HouseTwenty', 'EigenWorms']
 
 for dataset in datasets:
-	try:
-	    X_train, y_train, X_test, y_test = data_loader.load_dataset(dataset)
-	    print(sorted(data_loader.baseline_accuracy(dataset)[dataset].items(), key=lambda x: -x[1]))
+    try:
+        X_train, y_train, X_test, y_test = data_loader.load_dataset(dataset)
+        print(sorted(data_loader.baseline_accuracy(dataset)[dataset].items(), key=lambda x: -x[1]))
 
-	    X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1]))
-	    X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1]))
+        X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1]))
+        X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1]))
 
-	    # Map labels to [0, .., C-1]
-	    map_dict = {}
-	    for j, c in enumerate(np.unique(y_train)):
-	        map_dict[c] = j
-	    y_train = pd.Series(y_train).map(map_dict).values
-	    y_test = pd.Series(y_test).map(map_dict).values
+        # Map labels to [0, .., C-1]
+        map_dict = {}
+        for j, c in enumerate(np.unique(y_train)):
+            map_dict[c] = j
+        y_train = pd.Series(y_train).map(map_dict).values
+        y_test = pd.Series(y_test).map(map_dict).values
 
-	    gendis_discovery(X_train, y_train, X_test, y_test,  
-	            'results/lts_vs_genetic/{}_genetic_shapelets_{}.txt'.format(dataset, int(time.time())), 
-	            'results/lts_vs_genetic/{}_genetic_shapelets_predictions_{}.csv'.format(dataset, int(time.time())),
-	            'results/lts_vs_genetic/{}_genetic_runtime_{}.csv'.format(dataset, int(time.time()))
-	    )
-	    print(sorted(data_loader.baseline_accuracy(dataset)[dataset].items(), key=lambda x: -x[1]))
-	except:
-		print('Dataset {} failed...'.format(dataset))
+        gendis_discovery(X_train, y_train, X_test, y_test,  
+                'results/lts_vs_genetic/{}_genetic_shapelets_{}.txt'.format(dataset, int(time.time())), 
+                'results/lts_vs_genetic/{}_genetic_shapelets_predictions_{}.csv'.format(dataset, int(time.time())),
+                'results/lts_vs_genetic/{}_genetic_runtime_{}.csv'.format(dataset, int(time.time()))
+        )
+        print(sorted(data_loader.baseline_accuracy(dataset)[dataset].items(), key=lambda x: -x[1]))
+    except KeyError as e:
+        print('Dataset {} failed...'.format(dataset))
