@@ -188,7 +188,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             raise Exception('Time series should be of at least length 4!')
 
         if max_len is None:
-            if len(X[0]) > 4*self._min_length:
+            if len(X[0]) > 20:
                 max_len = len(X[0]) // 4
             else:
                 max_len = len(X[0])
