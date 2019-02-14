@@ -127,7 +127,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
     """
     def __init__(self, population_size=50, iterations=25, verbose=False, 
                  normed=False, mutation_prob=0.1, wait=10, plot=None,
-                 crossover_prob=0.4, n_jobs=4):
+                 crossover_prob=0.4, n_jobs=4, max_len=None):
         # Hyper-parameters
         self.population_size = population_size
         self.iterations = iterations
@@ -138,6 +138,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
         self.wait = wait
         self.n_jobs = n_jobs
         self.normed = normed
+        self.max_len = max_len
 
         # Attributes
         self.label_mapping = {}
@@ -168,7 +169,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
 
         return y
 
-    def fit(self, X, y, max_len=None):
+    def fit(self, X, y):
         """Extract shapelets from the provided timeseries and labels.
 
         Parameters
@@ -187,11 +188,11 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
         if self._min_length <= 4:
             raise Exception('Time series should be of at least length 4!')
 
-        if max_len is None:
+        if self.max_len is None:
             if len(X[0]) > 20:
-                max_len = len(X[0]) // 4
+                self.max_len = len(X[0]) // 2
             else:
-                max_len = len(X[0])
+                self.max_len = len(X[0])
 
         # Sci-kit learn check for label vector.
         check_array(y)
@@ -211,7 +212,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             shaps = []
             for _ in range(n_shapelets):
                 rand_row = np.random.randint(X.shape[0])
-                rand_length = np.random.randint(4, min(self._min_length, max_len))
+                rand_length = np.random.randint(4, min(self._min_length, self.max_len))
                 rand_col = np.random.randint(self._min_length - rand_length)
                 shaps.append(X[rand_row][rand_col:rand_col+rand_length])
             if n_shapelets > 1:
@@ -240,7 +241,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             """Extract some motifs from sampled timeseries"""
             shaps = []
             for _ in range(n_shapelets):
-                rand_length = np.random.randint(4, max_len)
+                rand_length = np.random.randint(4, self.max_len)
                 subset_idx = np.random.choice(range(len(X)), 
                                               size=n_draw, 
                                               replace=True)
@@ -264,7 +265,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             rand = np.random.random()
             if n_shapelets > 1:
                 if rand < 1./2.:
-                    rand_length = np.random.randint(4, min(self._min_length, max_len))
+                    rand_length = np.random.randint(4, min(self._min_length, self.max_len))
                     return kmeans(n_shapelets, rand_length)
                 else:
                     return random_shapelet(n_shapelets)
@@ -297,14 +298,14 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             #shap_lens = sum([len(x) for x in shapelets])
             cv_score = -log_loss(y, preds)# - 0.01*shap_lens
 
-            if verbose and self.verbose:
-                lr = LogisticRegression(multi_class='ovr')
-                lr.fit(D, y)
-                preds = lr.predict_proba(D)
-                hard_preds = lr.predict(D)
-                print('Accuracy = {}'.format(accuracy_score(y, hard_preds)))
-                print('Logloss = {}'.format(log_loss(y, preds)))
-                print('{} shapelets, total length = {}'.format(len(shapelets), sum([len(x) for x in shapelets])))
+            #if verbose and self.verbose:
+            #    lr = LogisticRegression(multi_class='ovr')
+            #    lr.fit(D, y)
+            #    preds = lr.predict_proba(D)
+            #    hard_preds = lr.predict(D)
+            #    print('Accuracy = {}'.format(accuracy_score(y, hard_preds)))
+            #    print('Logloss = {}'.format(log_loss(y, preds)))
+            #    print('{} shapelets, total length = {}'.format(len(shapelets), sum([len(x) for x in shapelets])))
 
             return (cv_score, sum([len(x) for x in shapelets]))
 
@@ -441,8 +442,8 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
         fitnesses = list(map(toolbox.evaluate, pop))
         for ind, fit in zip(pop, fitnesses):
             ind.fitness.values = fit
-        if self.verbose:
-            print('Initializing population took {} seconds...'.format(time.time() - start))
+        #if self.verbose:
+        #    print('Initializing population took {} seconds...'.format(time.time() - start))
 
         # Keep track of the best iteration, in order to do stop after `wait`
         # generations without improvement
@@ -500,8 +501,8 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
                     toolbox.shapcx(child1, child2)
                     del child1.fitness.values
                     del child2.fitness.values
-            if self.verbose:
-                print('Crossover operations took {} seconds'.format(time.time() - start))
+            #if self.verbose:
+            #    print('Crossover operations took {} seconds'.format(time.time() - start))
 
             # Apply mutation to each individual
             start = time.time()
@@ -515,8 +516,8 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
                 if np.random.random() < self.mutation_prob:
                     toolbox.mask(indiv)
                     del indiv.fitness.values
-            if self.verbose:
-                print('Mutation operations took {} seconds'.format(time.time() - start))
+            #if self.verbose:
+            #    print('Mutation operations took {} seconds'.format(time.time() - start))
 
             # Update the fitness values
             start = time.time()
@@ -524,8 +525,8 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
             for ind, fit in zip(invalid_ind, fitnesses):
                 ind.fitness.values = fit
-            if self.verbose:
-                print('Calculating fitnesses for {} of {} inviduals took {} seconds...'.format(len(invalid_ind), len(pop), time.time() - start))
+            #if self.verbose:
+            #    print('Calculating fitnesses for {} of {} inviduals took {} seconds...'.format(len(invalid_ind), len(pop), time.time() - start))
 
             # Replace population and update hall of fame & statistics
             start = time.time()
@@ -533,10 +534,10 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             fittest_ind = tools.selBest(pop + offspring, 1)
             pop[:] = new_pop + fittest_ind
             it_stats = stats.compile(pop)
-            if self.verbose:
-                print('Selection took {} seconds'.format(time.time() - start))
-
-                print('Current population set sizes:', [len(x) for x in pop])
+            #if self.verbose:
+            #    print('Selection took {} seconds'.format(time.time() - start))
+            #
+            #    print('Current population set sizes:', [len(x) for x in pop])
 
             # Print our statistics
             if self.verbose:

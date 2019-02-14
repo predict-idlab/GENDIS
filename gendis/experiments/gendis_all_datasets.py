@@ -16,12 +16,15 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
+from sklearn.pipeline import Pipeline
 
 from tslearn.datasets import UCR_UEA_datasets
 
+# TODO: We need to tune the max_len parameter
+
 def fit_lr(X_distances_train, y_train, X_distances_test, y_test, out_path):
     lr = GridSearchCV(
-            LogisticRegression(random_state=1337), 
+            LogisticRegression(), 
             {
               'penalty': ['l1', 'l2'], 
               'C': [10**i for i in range(-2, 6)] + [5**i for i in range(-2, 6)],
@@ -101,7 +104,19 @@ def fit_rf(X_distances_train, y_train, X_distances_test, y_test, out_path):
     proba_preds.to_csv(out_path.split('.')[0]+'_rf_proba.csv')
 
 def gendis_discovery(X_train, y_train, X_test, y_test, shap_out_path, pred_out_path, timing_out_path):
-    genetic_extractor = GeneticExtractor(verbose=True, population_size=100, iterations=100, wait=10, plot=None)
+    pipeline = Pipeline([
+        ('extractor', GeneticExtractor(verbose=False, population_size=10, iterations=25, wait=10, plot=None)),
+        ('classifier', LogisticRegression())
+    ])
+
+    ts_len = X_train.shape[1]
+    grid_search = GridSearchCV(pipeline, {'extractor__max_len': [ts_len // 4, ts_len // 2, ts_len]}, cv=2)
+    grid_search.fit(X_train, y_train)
+    best_length = grid_search.best_params_['extractor__max_len']
+
+    print(best_length, X_train.shape[1])
+
+    genetic_extractor = GeneticExtractor(verbose=True, population_size=100, iterations=100, wait=10, plot=None, max_len=best_length)
     start = time.time()
     genetic_extractor.fit(X_train, y_train)
     genetic_time = time.time() - start
