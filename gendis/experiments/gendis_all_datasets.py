@@ -19,6 +19,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 
 from tslearn.datasets import UCR_UEA_datasets
+from tslearn.preprocessing import TimeSeriesScalerMeanVariance
 
 # TODO: We need to tune the max_len parameter
 
@@ -29,7 +30,8 @@ def fit_lr(X_distances_train, y_train, X_distances_test, y_test, out_path):
               'penalty': ['l1', 'l2'], 
               'C': [10**i for i in range(-2, 6)] + [5**i for i in range(-2, 6)],
               'class_weight': [None, 'balanced']
-            }
+            },
+            scoring='neg_log_loss'
         )
     lr.fit(X_distances_train, y_train)
     
@@ -55,7 +57,8 @@ def fit_svm(X_distances_train, y_train, X_distances_test, y_test, out_path):
             SVC(probability=True, kernel='linear'), 
             {
               'C': [10**i for i in range(-2, 6)] + [5**i for i in range(-2, 6)]
-            }
+            },
+            scoring='neg_log_loss'
         )
     svc.fit(X_distances_train, y_train)
     
@@ -82,7 +85,8 @@ def fit_rf(X_distances_train, y_train, X_distances_test, y_test, out_path):
         {
             'n_estimators': [10, 25, 50, 100, 500], 
             'max_depth': [None, 3, 7, 15]
-        }
+        },
+        scoring='neg_log_loss'
     )
     rf.fit(X_distances_train, y_train)
     
@@ -110,7 +114,7 @@ def gendis_discovery(X_train, y_train, X_test, y_test, shap_out_path, pred_out_p
     ])
 
     ts_len = X_train.shape[1]
-    grid_search = GridSearchCV(pipeline, {'extractor__max_len': [ts_len // 4, ts_len // 2, ts_len]}, cv=2)
+    grid_search = GridSearchCV(pipeline, {'extractor__max_len': [ts_len // 4, ts_len // 2, 3 * ts_len // 4, ts_len]}, cv=3, scoring='neg_log_loss')
     grid_search.fit(X_train, y_train)
     best_length = grid_search.best_params_['extractor__max_len']
 
@@ -162,10 +166,14 @@ datasets = ['ShakeGestureWiimoteZ', 'PLAID', 'PickupGestureWiimoteZ', 'GesturePe
             'SemgHandGenderCh2', 'CinCECGtorso', 'EthanolLevel', 'EthanolConcentration', 'InlineSkate', 'PigCVP', 'PigArtPressure', 'PigAirwayPressure', 
             'StandWalkJump', 'HandOutlines', 'Rock', 'MotorImagery', 'HouseTwenty', 'EigenWorms']
 
-for dataset in datasets:
+for dataset in ['ItalyPowerDemand']:
     try:
         X_train, y_train, X_test, y_test = data_loader.load_dataset(dataset)
         print(sorted(data_loader.baseline_accuracy(dataset)[dataset].items(), key=lambda x: -x[1]))
+
+        scaler = TimeSeriesScalerMeanVariance()
+        X_train = scaler.fit_transform(X_train)
+        X_test = scaler.fit_transform(X_test)
 
         X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1]))
         X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1]))
