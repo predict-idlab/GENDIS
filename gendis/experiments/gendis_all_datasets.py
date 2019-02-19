@@ -191,8 +191,8 @@ for dataset in datasets:
 
         timestamp = int(time.time())
 
-        pd.DataFrame(y_train).to_csv('results/lts_vs_genetic/{}_ground_truth_test_{}.csv'.format(dataset, timestamp), columns=['label'])
-        pd.DataFrame(y_test).to_csv('results/lts_vs_genetic/{}_ground_truth_train_{}.csv'.format(dataset, timestamp), columns=['label'])
+        pd.DataFrame(y_train, columns=['label']).to_csv('results/lts_vs_genetic/{}_ground_truth_test_{}.csv'.format(dataset, timestamp))
+        pd.DataFrame(y_test, columns=['label']).to_csv('results/lts_vs_genetic/{}_ground_truth_train_{}.csv'.format(dataset, timestamp))
 
         gendis_discovery(X_train, y_train, X_test, y_test,  
                 'results/lts_vs_genetic/{}_genetic_shapelets_{}.txt'.format(dataset, timestamp), 
@@ -202,3 +202,5 @@ for dataset in datasets:
         print(sorted(data_loader.baseline_accuracy(dataset)[dataset].items(), key=lambda x: -x[1]))
     except KeyError as e:
         print('Dataset {} failed...'.format(dataset))
+    except Exception as e:
+        raise
