@@ -189,10 +189,14 @@ for dataset in datasets:
         y_train = pd.Series(y_train).map(map_dict).values
         y_test = pd.Series(y_test).map(map_dict).values
 
+        timestamp = int(time.time())
+
+        pd.DataFrame(y_test).to_csv('results/lts_vs_genetic/{}_ground_truth_{}.csv'.format(dataset, timestamp), columns=['label'])
+
         gendis_discovery(X_train, y_train, X_test, y_test,  
-                'results/lts_vs_genetic/{}_genetic_shapelets_{}.txt'.format(dataset, int(time.time())), 
-                'results/lts_vs_genetic/{}_genetic_shapelets_predictions_{}.csv'.format(dataset, int(time.time())),
-                'results/lts_vs_genetic/{}_genetic_runtime_{}.csv'.format(dataset, int(time.time()))
+                'results/lts_vs_genetic/{}_genetic_shapelets_{}.txt'.format(dataset, timestamp), 
+                'results/lts_vs_genetic/{}_genetic_shapelets_predictions_{}.csv'.format(dataset, timestamp),
+                'results/lts_vs_genetic/{}_genetic_runtime_{}.csv'.format(dataset, timestamp)
         )
         print(sorted(data_loader.baseline_accuracy(dataset)[dataset].items(), key=lambda x: -x[1]))
     except KeyError as e:
