@@ -191,7 +191,8 @@ for dataset in datasets:
 
         timestamp = int(time.time())
 
-        pd.DataFrame(y_test).to_csv('results/lts_vs_genetic/{}_ground_truth_{}.csv'.format(dataset, timestamp), columns=['label'])
+        pd.DataFrame(y_train).to_csv('results/lts_vs_genetic/{}_ground_truth_test_{}.csv'.format(dataset, timestamp), columns=['label'])
+        pd.DataFrame(y_test).to_csv('results/lts_vs_genetic/{}_ground_truth_train_{}.csv'.format(dataset, timestamp), columns=['label'])
 
         gendis_discovery(X_train, y_train, X_test, y_test,  
                 'results/lts_vs_genetic/{}_genetic_shapelets_{}.txt'.format(dataset, timestamp), 
