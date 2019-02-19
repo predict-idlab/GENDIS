@@ -15,7 +15,7 @@ from sklearn.metrics import accuracy_score, log_loss
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.pipeline import Pipeline
 
 from tslearn.datasets import UCR_UEA_datasets
@@ -30,8 +30,7 @@ def fit_lr(X_distances_train, y_train, X_distances_test, y_test, out_path):
               'penalty': ['l1', 'l2'], 
               'C': [10**i for i in range(-2, 6)] + [5**i for i in range(-2, 6)],
               'class_weight': [None, 'balanced']
-            },
-            scoring='neg_log_loss'
+            }
         )
     lr.fit(X_distances_train, y_train)
     
@@ -57,8 +56,7 @@ def fit_svm(X_distances_train, y_train, X_distances_test, y_test, out_path):
             SVC(probability=True, kernel='linear'), 
             {
               'C': [10**i for i in range(-2, 6)] + [5**i for i in range(-2, 6)]
-            },
-            scoring='neg_log_loss'
+            }
         )
     svc.fit(X_distances_train, y_train)
     
@@ -85,8 +83,7 @@ def fit_rf(X_distances_train, y_train, X_distances_test, y_test, out_path):
         {
             'n_estimators': [10, 25, 50, 100, 500], 
             'max_depth': [None, 3, 7, 15]
-        },
-        scoring='neg_log_loss'
+        }
     )
     rf.fit(X_distances_train, y_train)
     
@@ -166,10 +163,17 @@ datasets = ['ShakeGestureWiimoteZ', 'PLAID', 'PickupGestureWiimoteZ', 'GesturePe
             'SemgHandGenderCh2', 'CinCECGtorso', 'EthanolLevel', 'EthanolConcentration', 'InlineSkate', 'PigCVP', 'PigArtPressure', 'PigAirwayPressure', 
             'StandWalkJump', 'HandOutlines', 'Rock', 'MotorImagery', 'HouseTwenty', 'EigenWorms']
 
-for dataset in datasets:
+for dataset in ['MoteStrain']:
     try:
         X_train, y_train, X_test, y_test = data_loader.load_dataset(dataset)
         print(sorted(data_loader.baseline_accuracy(dataset)[dataset].items(), key=lambda x: -x[1]))
+
+        # TODO: Concatenate X and y's and re-split them (stratified)
+        nr_test_samples = len(X_test)
+        X = np.vstack((X_train, X_test))
+        y = np.vstack((np.reshape(y_train, (-1, 1)), np.reshape(y_test, (-1, 1))))
+        y = np.reshape(y, (-1,))
+        X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, test_size=nr_test_samples)
 
         scaler = TimeSeriesScalerMeanVariance()
         X_train = scaler.fit_transform(X_train)
