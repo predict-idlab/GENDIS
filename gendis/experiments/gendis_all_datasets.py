@@ -169,7 +169,7 @@ for dataset in datasets:
         print(sorted(data_loader.baseline_accuracy(dataset)[dataset].items(), key=lambda x: -x[1]))
 
         # TODO: Concatenate X and y's and re-split them (stratified)
-        if not X_test: continue
+        if X_test is None or len(X_test) == 0: continue
         nr_test_samples = len(X_test)
         X = np.vstack((X_train, X_test))
         y = np.vstack((np.reshape(y_train, (-1, 1)), np.reshape(y_test, (-1, 1))))
