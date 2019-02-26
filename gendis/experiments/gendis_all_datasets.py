@@ -140,13 +140,7 @@ def gendis_discovery(X_train, y_train, X_test, y_test, shap_out_path, pred_out_p
 
 data_loader = UCR_UEA_datasets()
 
-datasets = ['ShakeGestureWiimoteZ', 'PLAID', 'PickupGestureWiimoteZ', 'GesturePebbleZ2', 'GesturePebbleZ1', 'AllGestureWiimoteZ', 
-            'AllGestureWiimoteY', 'AllGestureWiimoteX', 'PenDigits', 'SmoothSubspace', 'MelbournePedestrian', 'ItalyPowerDemand', 
-            'Chinatown', 'JapaneseVowels', 'RacketSports', 'InsectWingbeat', 'LSST', 'Libras', 'Crop', 'FingerMovements', 'NATOPS', 
-            'SyntheticControl', 'FaceDetection', 'SonyAIBORobotSurface2', 'Ering', 'SonyAIBORobotSurface1', 'ProximalPhalanxTW', 
-            'ProximalPhalanxOutlineCorrect', 'ProximalPhalanxOutlineAgeGroup', 'PhalangesOutlinesCorrect', 'MiddlePhalanxTW', 
-            'MiddlePhalanxOutlineCorrect', 'MiddlePhalanxOutlineAgeGroup', 'DistalPhalanxTW', 'DistalPhalanxOutlineCorrect', 
-            'DistalPhalanxOutlineAgeGroup', 'TwoLeadECG', 'MoteStrain', 'SpokenArabicDigits', 'ElectricDevices', 'ECG200', 'MedicalImages', 
+datasets = ['ECG200', 'MedicalImages', 
             'BasicMotions', 'TwoPatterns', 'SwedishLeaf', 'CBF', 'BME', 'FacesUCR', 'FaceAll', 'ECGFiveDays', 'ECG5000', 'PowerCons', 
             'Plane', 'PEMS', 'ArticularyWordRecognition', 'UMD', 'GunPointOldVersusYoung', 'GunPointMaleVersusFemale', 'GunPointAgeSpan', 
             'GunPoint', 'Wafer', 'Handwriting', 'ChlorineConcentration', 'Adiac', 'CharacterTrajectories', 'Fungi', 'Epilepsy', 'Phoneme', 
@@ -163,12 +157,24 @@ datasets = ['ShakeGestureWiimoteZ', 'PLAID', 'PickupGestureWiimoteZ', 'GesturePe
             'SemgHandGenderCh2', 'CinCECGtorso', 'EthanolLevel', 'EthanolConcentration', 'InlineSkate', 'PigCVP', 'PigArtPressure', 'PigAirwayPressure', 
             'StandWalkJump', 'HandOutlines', 'Rock', 'MotorImagery', 'HouseTwenty', 'EigenWorms']
 
+datasets_done = ['ShakeGestureWiimoteZ', 'PLAID', 'PickupGestureWiimoteZ', 'GesturePebbleZ2', 'GesturePebbleZ1', 'AllGestureWiimoteZ', 
+                 'AllGestureWiimoteY', 'AllGestureWiimoteX', 'PenDigits', 'SmoothSubspace', 'MelbournePedestrian', 'ItalyPowerDemand', 
+                 'Chinatown', 'JapaneseVowels', 'RacketSports', 'InsectWingbeat', 'LSST', 'Libras', 'Crop', 'FingerMovements', 'NATOPS', 
+                 'SyntheticControl', 'FaceDetection', 'SonyAIBORobotSurface2', 'Ering', 'SonyAIBORobotSurface1', 'ProximalPhalanxTW', 
+                 'ProximalPhalanxOutlineCorrect', 'ProximalPhalanxOutlineAgeGroup', 'PhalangesOutlinesCorrect', 'MiddlePhalanxTW', 
+                 'MiddlePhalanxOutlineCorrect', 'MiddlePhalanxOutlineAgeGroup', 'DistalPhalanxTW', 'DistalPhalanxOutlineCorrect', 
+                 'DistalPhalanxOutlineAgeGroup', 'TwoLeadECG', 'MoteStrain', 'SpokenArabicDigits']
+
+
+# We shall do this later with a custom configuration
+datasets_long = ['ElectricDevices']
+
 for dataset in datasets:
     try:
         X_train, y_train, X_test, y_test = data_loader.load_dataset(dataset)
         print(sorted(data_loader.baseline_accuracy(dataset)[dataset].items(), key=lambda x: -x[1]))
 
-        # TODO: Concatenate X and y's and re-split them (stratified)
+        # Re-sample the test and train set with same sizes and strataified
         if X_test is None or len(X_test) == 0: continue
         nr_test_samples = len(X_test)
         X = np.vstack((X_train, X_test))
@@ -185,7 +191,7 @@ for dataset in datasets:
 
         # Map labels to [0, .., C-1]
         map_dict = {}
-        for j, c in enumerate(np.unique(y_train)):
+        for j, c in enumerate(sorted(set(y_train))):
             map_dict[c] = j
         y_train = pd.Series(y_train).map(map_dict).values
         y_test = pd.Series(y_test).map(map_dict).values
