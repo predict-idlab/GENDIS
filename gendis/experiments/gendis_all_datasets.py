@@ -110,8 +110,12 @@ def gendis_discovery(X_train, y_train, X_test, y_test, shap_out_path, pred_out_p
         ('classifier', LogisticRegression())
     ])
 
+    # For some datasets, the number of samples for a class is lower than 3...
+    min_samples = Counter(y_train).most_common()[-1][1]
+    n_folds = min(min_samples, 3)
+
     ts_len = X_train.shape[1]
-    grid_search = GridSearchCV(pipeline, {'extractor__max_len': [ts_len // 4, ts_len // 2, 3 * ts_len // 4, ts_len]}, cv=3, scoring='neg_log_loss')
+    grid_search = GridSearchCV(pipeline, {'extractor__max_len': [ts_len // 4, ts_len // 2, 3 * ts_len // 4, ts_len]}, cv=n_folds, scoring='neg_log_loss')
     grid_search.fit(X_train, y_train)
     best_length = grid_search.best_params_['extractor__max_len']
 
@@ -140,8 +144,7 @@ def gendis_discovery(X_train, y_train, X_test, y_test, shap_out_path, pred_out_p
 
 data_loader = UCR_UEA_datasets()
 
-datasets = ['ECG200', 'MedicalImages', 
-            'BasicMotions', 'TwoPatterns', 'SwedishLeaf', 'CBF', 'BME', 'FacesUCR', 'FaceAll', 'ECGFiveDays', 'ECG5000', 'PowerCons', 
+datasets = ['ECG5000', 'PowerCons', 
             'Plane', 'PEMS', 'ArticularyWordRecognition', 'UMD', 'GunPointOldVersusYoung', 'GunPointMaleVersusFemale', 'GunPointAgeSpan', 
             'GunPoint', 'Wafer', 'Handwriting', 'ChlorineConcentration', 'Adiac', 'CharacterTrajectories', 'Fungi', 'Epilepsy', 'Phoneme', 
             'Wine', 'Strawberry', 'ArrowHead', 'InsectWingbeatSound', 'WordSynonyms', 'FiftyWords', 'DuckDuckGeese', 'Trace', 
@@ -158,7 +161,8 @@ datasets_done = ['ShakeGestureWiimoteZ', 'PLAID', 'PickupGestureWiimoteZ', 'Gest
                  'SyntheticControl', 'FaceDetection', 'SonyAIBORobotSurface2', 'Ering', 'SonyAIBORobotSurface1', 'ProximalPhalanxTW', 
                  'ProximalPhalanxOutlineCorrect', 'ProximalPhalanxOutlineAgeGroup', 'PhalangesOutlinesCorrect', 'MiddlePhalanxTW', 
                  'MiddlePhalanxOutlineCorrect', 'MiddlePhalanxOutlineAgeGroup', 'DistalPhalanxTW', 'DistalPhalanxOutlineCorrect', 
-                 'DistalPhalanxOutlineAgeGroup', 'TwoLeadECG', 'MoteStrain', 'SpokenArabicDigits']
+                 'DistalPhalanxOutlineAgeGroup', 'TwoLeadECG', 'MoteStrain', 'SpokenArabicDigits', 'ECG200', 'MedicalImages', 
+                 'BasicMotions', 'TwoPatterns', 'SwedishLeaf', 'CBF', 'BME', 'FacesUCR', 'FaceAll', 'ECGFiveDays', ]
 
 
 # We shall do this later with a custom configuration
