@@ -25,6 +25,7 @@ from tslearn.barycenters import euclidean_barycenter
 
 # Parallelization
 from pathos.multiprocessing import ProcessingPool as Pool
+import multiprocessing
 
 # ML
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -406,6 +407,9 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
 
         # Register all operations in the toolbox
         toolbox = base.Toolbox()
+
+        if self.n_jobs == -1:
+            self.n_jobs = multiprocessing.cpu_count()
 
         if self.n_jobs > 1:
             pool = Pool(self.n_jobs)

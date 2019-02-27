@@ -150,12 +150,7 @@ datasets = ['ECG200', 'MedicalImages',
             'UWaveGestureLibrary', 'Lightning7', 'ToeSegmentation2', 'DiatomSizeReduction', 'FaceFour', 'GestureMidAirD3', 'GestureMidAirD2', 
             'GestureMidAirD1', 'Symbols', 'HandMovementDirection', 'Heartbeat', 'Yoga', 'OSULeaf', 'Ham', 'Meat', 'Fish', 'Beef', 'ShapeletSim', 
             'FordB', 'FordA', 'ShapesAll', 'Herring', 'Earthquakes', 'BirdChicken', 'BeetleFly', 'OliveOil', 'Car', 'InsectEPGSmallTrain', 
-            'InsectEPGRegularTrain', 'Lightning2', 'AtrialFibrilation', 'SmallKitchenAppliances', 'ScreenType', 'RefrigerationDevices', 
-            'LargeKitchenAppliances', 'Computers', 'NonInvasiveFetalECGThorax2', 'NonInvasiveFetalECGThorax1', 'SelfRegulationSCP1', 'WormsTwoClass', 
-            'Worms', 'UWaveGestureLibraryAll', 'StarlightCurves', 'Phoneme', 'MixedShapesSmallTrain', 'MixedShapes', 'Mallat', 'Haptics', 
-            'SelfRegulationSCP2', 'Cricket', 'EOGVerticalSignal', 'EOGHorizontalSignal', 'ACSF1', 'SemgHandSubjectCh2', 'SemgHandMovementCh2', 
-            'SemgHandGenderCh2', 'CinCECGtorso', 'EthanolLevel', 'EthanolConcentration', 'InlineSkate', 'PigCVP', 'PigArtPressure', 'PigAirwayPressure', 
-            'StandWalkJump', 'HandOutlines', 'Rock', 'MotorImagery', 'HouseTwenty', 'EigenWorms']
+            'InsectEPGRegularTrain', 'Lightning2', 'AtrialFibrilation', 'SmallKitchenAppliances']
 
 datasets_done = ['ShakeGestureWiimoteZ', 'PLAID', 'PickupGestureWiimoteZ', 'GesturePebbleZ2', 'GesturePebbleZ1', 'AllGestureWiimoteZ', 
                  'AllGestureWiimoteY', 'AllGestureWiimoteX', 'PenDigits', 'SmoothSubspace', 'MelbournePedestrian', 'ItalyPowerDemand', 
@@ -167,9 +162,14 @@ datasets_done = ['ShakeGestureWiimoteZ', 'PLAID', 'PickupGestureWiimoteZ', 'Gest
 
 
 # We shall do this later with a custom configuration
-datasets_long = ['ElectricDevices']
+datasets_long = ['ElectricDevices', 'HandOutlines', 'ScreenType', 'RefrigerationDevices', 
+            'LargeKitchenAppliances', 'Computers', 'NonInvasiveFetalECGThorax2', 'NonInvasiveFetalECGThorax1', 'SelfRegulationSCP1', 'WormsTwoClass', 
+            'Worms', 'UWaveGestureLibraryAll', 'StarlightCurves', 'Phoneme', 'MixedShapesSmallTrain', 'MixedShapes', 'Mallat', 'Haptics', 
+            'SelfRegulationSCP2', 'Cricket', 'EOGVerticalSignal', 'EOGHorizontalSignal', 'ACSF1', 'SemgHandSubjectCh2', 'SemgHandMovementCh2', 
+            'SemgHandGenderCh2', 'CinCECGtorso', 'EthanolLevel', 'EthanolConcentration', 'InlineSkate', 'PigCVP', 'PigArtPressure', 'PigAirwayPressure', 
+            'StandWalkJump', 'HandOutlines', 'Rock', 'MotorImagery', 'HouseTwenty', 'EigenWorms']
 
-for dataset in datasets:
+for dataset in datasets[::-1]:
     try:
         X_train, y_train, X_test, y_test = data_loader.load_dataset(dataset)
         print(sorted(data_loader.baseline_accuracy(dataset)[dataset].items(), key=lambda x: -x[1]))
