@@ -31,9 +31,11 @@ import multiprocessing
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_array
 from sklearn.utils.validation import check_is_fitted
-from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import log_loss, accuracy_score
 from gendis.pairwise_dist import _pdist
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
 
 # Ignore warnings
 import warnings; warnings.filterwarnings('ignore')
@@ -260,7 +262,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
         def create_individual(n_shapelets=None):
             """Generate a random shapelet set"""
             if n_shapelets is None:
-                ub = int(np.sqrt(self._min_length)) + 1#len(X)#
+                ub = 10*len(X) #int(np.sqrt(self._min_length)) + 1  # ST uses 10*len(X)
                 n_shapelets = np.random.randint(2, ub)
             
             rand = np.random.random()
@@ -293,11 +295,20 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
                 shap_hash = hash(tuple(shap.flatten()))
                 cache.set(shap_hash, D[:, shap_ix])
 
-            lr = LogisticRegression(multi_class='ovr')
+            # TODO: What happens if we use a linearSVC here?
+            lr = LogisticRegression(multi_class='multinomial', solver='lbfgs')
             lr.fit(D, y)
             preds = lr.predict_proba(D)
-            #shap_lens = sum([len(x) for x in shapelets])
-            cv_score = -log_loss(y, preds)# - 0.01*shap_lens
+            cv_score = -log_loss(y, preds)
+            #preds = lr.predict(D)
+            #cv_score = accuracy_score(y, preds)
+
+            #svm = SVC(probability=True, kernel='linear')
+            #svm.fit(D, y)
+            #reds = svm.predict_proba(D)
+            #cv_score = -log_loss(y, preds)
+            #preds = svm.predict(D)
+            #cv_score = accuracy_score(y, preds)
 
             #if verbose and self.verbose:
             #    lr = LogisticRegression(multi_class='ovr')

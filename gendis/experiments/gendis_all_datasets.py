@@ -164,6 +164,7 @@ datasets_done = ['ShakeGestureWiimoteZ', 'PLAID', 'PickupGestureWiimoteZ', 'Gest
                  'DistalPhalanxOutlineAgeGroup', 'TwoLeadECG', 'MoteStrain', 'SpokenArabicDigits', 'ECG200', 'MedicalImages', 
                  'BasicMotions', 'TwoPatterns', 'SwedishLeaf', 'CBF', 'BME', 'FacesUCR', 'FaceAll', 'ECGFiveDays', ]
 
+dataset_subset = ['MoteStrain', 'TwoLeadECG', 'BeetleFly', 'ArrowHead']
 
 # We shall do this later with a custom configuration
 datasets_long = ['ElectricDevices', 'HandOutlines', 'ScreenType', 'RefrigerationDevices', 
@@ -173,7 +174,10 @@ datasets_long = ['ElectricDevices', 'HandOutlines', 'ScreenType', 'Refrigeration
             'SemgHandGenderCh2', 'CinCECGtorso', 'EthanolLevel', 'EthanolConcentration', 'InlineSkate', 'PigCVP', 'PigArtPressure', 'PigAirwayPressure', 
             'StandWalkJump', 'HandOutlines', 'Rock', 'MotorImagery', 'HouseTwenty', 'EigenWorms']
 
-for dataset in datasets:
+if not os.path.isdir('results/genetic_large_shapelets'): 
+    os.makedirs('results/genetic_large_shapelets')
+
+for dataset in dataset_subset:
     try:
         X_train, y_train, X_test, y_test = data_loader.load_dataset(dataset)
         print(sorted(data_loader.baseline_accuracy(dataset)[dataset].items(), key=lambda x: -x[1]))
@@ -202,13 +206,13 @@ for dataset in datasets:
 
         timestamp = int(time.time())
 
-        pd.DataFrame(y_test, columns=['label']).to_csv('results/lts_vs_genetic/{}_ground_truth_test_{}.csv'.format(dataset, timestamp))
-        pd.DataFrame(y_train, columns=['label']).to_csv('results/lts_vs_genetic/{}_ground_truth_train_{}.csv'.format(dataset, timestamp))
+        pd.DataFrame(y_test, columns=['label']).to_csv('results/genetic_large_shapelets/{}_ground_truth_test_{}.csv'.format(dataset, timestamp))
+        pd.DataFrame(y_train, columns=['label']).to_csv('results/genetic_large_shapelets/{}_ground_truth_train_{}.csv'.format(dataset, timestamp))
 
         gendis_discovery(X_train, y_train, X_test, y_test,  
-                'results/lts_vs_genetic/{}_genetic_shapelets_{}.txt'.format(dataset, timestamp), 
-                'results/lts_vs_genetic/{}_genetic_shapelets_predictions_{}.csv'.format(dataset, timestamp),
-                'results/lts_vs_genetic/{}_genetic_runtime_{}.csv'.format(dataset, timestamp)
+                'results/genetic_large_shapelets/{}_genetic_shapelets_{}.txt'.format(dataset, timestamp), 
+                'results/genetic_large_shapelets/{}_genetic_shapelets_predictions_{}.csv'.format(dataset, timestamp),
+                'results/genetic_large_shapelets/{}_genetic_runtime_{}.csv'.format(dataset, timestamp)
         )
         print(sorted(data_loader.baseline_accuracy(dataset)[dataset].items(), key=lambda x: -x[1]))
     except KeyError as e:
