@@ -31,7 +31,7 @@ import multiprocessing
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_array
 from sklearn.utils.validation import check_is_fitted
-from sklearn.metrics import log_loss, accuracy_score
+from sklearn.metrics import log_loss, accuracy_score, f1_score
 from gendis.pairwise_dist import _pdist
 
 from sklearn.linear_model import LogisticRegression
@@ -262,7 +262,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
         def create_individual(n_shapelets=None):
             """Generate a random shapelet set"""
             if n_shapelets is None:
-                ub = 10*len(X) #int(np.sqrt(self._min_length)) + 1  # ST uses 10*len(X)
+                ub = int(np.sqrt(self._min_length)) + 1  # ST uses 10*len(X)
                 n_shapelets = np.random.randint(2, ub)
             
             rand = np.random.random()
@@ -295,13 +295,27 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
                 shap_hash = hash(tuple(shap.flatten()))
                 cache.set(shap_hash, D[:, shap_ix])
 
-            # TODO: What happens if we use a linearSVC here?
+            # if len(np.unique(y)) > 2:
+            #     weighted_f1 = 0
+            #     for c in np.unique(y):
+            #         weight = sum(y == c) / len(y)
+            #         y_bin = y == c
+            #         lr = LogisticRegression()
+            #         lr.fit(D, y_bin)
+            #         preds = lr.predict_proba(D)
+            #         weighted_f1 += weight*log_loss(y_bin, preds)
+
+            #     cv_score = -weighted_f1
+            # else:
+            #     lr = LogisticRegression(multi_class='multinomial', solver='lbfgs')
+            #     lr.fit(D, y)
+            #     preds = lr.predict_proba(D)
+            #     cv_score = -log_loss(y, preds)
+
             lr = LogisticRegression(multi_class='multinomial', solver='lbfgs')
             lr.fit(D, y)
             preds = lr.predict_proba(D)
             cv_score = -log_loss(y, preds)
-            #preds = lr.predict(D)
-            #cv_score = accuracy_score(y, preds)
 
             #svm = SVC(probability=True, kernel='linear')
             #svm.fit(D, y)
@@ -310,14 +324,26 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             #preds = svm.predict(D)
             #cv_score = accuracy_score(y, preds)
 
-            #if verbose and self.verbose:
-            #    lr = LogisticRegression(multi_class='ovr')
-            #    lr.fit(D, y)
-            #    preds = lr.predict_proba(D)
-            #    hard_preds = lr.predict(D)
-            #    print('Accuracy = {}'.format(accuracy_score(y, hard_preds)))
-            #    print('Logloss = {}'.format(log_loss(y, preds)))
-            #    print('{} shapelets, total length = {}'.format(len(shapelets), sum([len(x) for x in shapelets])))
+            # if verbose and self.verbose:
+            #     if len(np.unique(y)) > 2:
+            #         weighted_f1 = 0
+            #         for c in np.unique(y):
+            #             weight = sum(y == c) / len(y)
+            #             y_bin = y == c
+            #             lr = LogisticRegression()
+            #             lr.fit(D, y_bin)
+            #             preds = lr.predict_proba(D)
+            #             logloss = log_loss(y_bin, preds)
+            #             weighted_f1 += weight*logloss
+
+            #             print('Class {}: Loss = {}, weight = {}'.format(c, logloss, weight))
+
+            #         cv_score = -weighted_f1
+            #     else:
+            #         lr = LogisticRegression(multi_class='multinomial', solver='lbfgs')
+            #         lr.fit(D, y)
+            #         preds = lr.predict_proba(D)
+            #         cv_score = -log_loss(y, preds)
 
             return (cv_score, sum([len(x) for x in shapelets]))
 
