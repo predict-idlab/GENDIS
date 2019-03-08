@@ -398,13 +398,13 @@ for dataset in datasets:
 
         timestamp = int(time.time())
 
-        pd.DataFrame(np.reshape(y_test, (-1, 1)), index=test_idx, columns=['label']).to_csv('results/genetic/{}_ground_truth_test_{}.csv'.format(dataset, timestamp))
-        pd.DataFrame(np.reshape(y_train, (-1, 1)), index=train_idx, columns=['label']).to_csv('results/genetic/{}_ground_truth_train_{}.csv'.format(dataset, timestamp))
+        pd.DataFrame(np.reshape(y_test, (-1, 1)), index=test_idx, columns=['label']).to_csv('results/lts_vs_genetic/{}_ground_truth_test_{}.csv'.format(dataset, timestamp))
+        pd.DataFrame(np.reshape(y_train, (-1, 1)), index=train_idx, columns=['label']).to_csv('results/lts_vs_genetic/{}_ground_truth_train_{}.csv'.format(dataset, timestamp))
 
         gendis_discovery(X_train, y_train, X_test, y_test,  
-                'results/genetic/{}_genetic_shapelets_{}.txt'.format(dataset, timestamp), 
-                'results/genetic/{}_genetic_shapelets_predictions_{}.csv'.format(dataset, timestamp),
-                'results/genetic/{}_genetic_runtime_{}.csv'.format(dataset, timestamp)
+                'results/lts_vs_genetic/{}_genetic_shapelets_{}.txt'.format(dataset, timestamp), 
+                'results/lts_vs_genetic/{}_genetic_shapelets_predictions_{}.csv'.format(dataset, timestamp),
+                'results/lts_vs_genetic/{}_genetic_runtime_{}.csv'.format(dataset, timestamp)
         )
         print(sorted(data_loader.baseline_accuracy(dataset)[dataset].items(), key=lambda x: -x[1]))
     except KeyError as e:
