@@ -230,7 +230,7 @@ def fit_svm(X_distances_train, y_train, X_distances_test, y_test, out_path):
 
 def fit_voting(X_distances_train, y_train, X_distances_test, y_test, out_path):
     svm_linear = Pipeline(steps=[('scale', MinMaxScaler()), ('svm', SVC(probability=True, kernel='linear'))])
-    svm_quadratic = SVC(probability=True, kernel='poly', degree=2)
+    svm_quadratic = Pipeline(steps=[('scale', MinMaxScaler()), ('svm', SVC(probability=True, kernel='poly', degree=2))])
     rf = RandomForestClassifier(n_estimators=500)
     knn = GridSearchCV(KNeighborsClassifier(weights='distance', metric='euclidean'), {'n_neighbors': [1, 3, 5, min(7, len(X_train) // 5), min(13, len(X_train) // 5), min(25, len(X_train) // 5)]})
     rot = RotationForestClassifier(n_estimators=50)
@@ -241,13 +241,13 @@ def fit_voting(X_distances_train, y_train, X_distances_test, y_test, out_path):
     nb = ComplementNB(norm=True)
 
     models = [
-        ('DecisionTree', dt),
+        #('DecisionTree', dt),
         ('RotationForest', rot),
         ('LinearSVC', svm_linear),
         ('QuadraticSVC', svm_quadratic),
         ('RandomForest', rf),
         ('NearestNeighbors', knn),
-        ('LogisticRegression', logreg),
+        #('LogisticRegression', logreg),
     ]
 
     accuracies = []
@@ -346,23 +346,25 @@ def gendis_discovery(X_train, y_train, X_test, y_test, shap_out_path, pred_out_p
 
 data_loader = UCR_UEA_datasets()
 
-datasets = ['ShakeGestureWiimoteZ', 'PLAID', 'PickupGestureWiimoteZ', 'GesturePebbleZ2', 'GesturePebbleZ1', 'AllGestureWiimoteZ', 
-            'AllGestureWiimoteY', 'AllGestureWiimoteX', 'PenDigits', 'SmoothSubspace', 'MelbournePedestrian', 'ItalyPowerDemand', 
-            'Chinatown', 'JapaneseVowels', 'RacketSports', 'InsectWingbeat', 'LSST', 'Libras', 'Crop', 'FingerMovements', 'NATOPS', 
-            'SyntheticControl', 'FaceDetection', 'SonyAIBORobotSurface2', 'Ering', 'SonyAIBORobotSurface1', 'ProximalPhalanxTW', 
-            'ProximalPhalanxOutlineCorrect', 'ProximalPhalanxOutlineAgeGroup', 'PhalangesOutlinesCorrect', 'MiddlePhalanxTW', 
-            'MiddlePhalanxOutlineCorrect', 'MiddlePhalanxOutlineAgeGroup', 'DistalPhalanxTW', 'DistalPhalanxOutlineCorrect', 
-            'DistalPhalanxOutlineAgeGroup', 'TwoLeadECG', 'MoteStrain', 'SpokenArabicDigits', 'ECG200', 'MedicalImages', 
-            'BasicMotions', 'TwoPatterns', 'SwedishLeaf', 'CBF', 'BME', 'FacesUCR', 'FaceAll', 'ECGFiveDays', 'ECG5000', 'PowerCons', 
-            'Plane', 'PEMS', 'ArticularyWordRecognition', 'UMD', 'GunPointOldVersusYoung', 'GunPointMaleVersusFemale', 'GunPointAgeSpan', 
-            'GunPoint', 'Wafer', 'Handwriting', 'ChlorineConcentration', 'Adiac', 'CharacterTrajectories', 'Fungi', 'Epilepsy', 'Phoneme', 
-            'Wine', 'Strawberry', 'ArrowHead', 'InsectWingbeatSound', 'WordSynonyms', 'FiftyWords', 'DuckDuckGeese', 'Trace', 
-            'ToeSegmentation1', 'Coffee', 'DodgerLoopWeekend', 'DodgerLoopGame', 'DodgerLoopDay', 'CricketZ', 'CricketY', 'CricketX', 
-            'FreezerSmallTrain', 'FreezerRegularTrain', 'UWaveGestureLibraryZ', 'UWaveGestureLibraryY', 'UWaveGestureLibraryX', 
-            'UWaveGestureLibrary', 'Lightning7', 'ToeSegmentation2', 'DiatomSizeReduction', 'FaceFour', 'GestureMidAirD3', 'GestureMidAirD2', 
+datasets = ['GestureMidAirD3', 'GestureMidAirD2', 
             'GestureMidAirD1', 'Symbols', 'HandMovementDirection', 'Heartbeat', 'Yoga', 'OSULeaf', 'Ham', 'Meat', 'Fish', 'Beef', 'ShapeletSim', 
             'FordB', 'FordA', 'ShapesAll', 'Herring', 'Earthquakes', 'BirdChicken', 'BeetleFly', 'OliveOil', 'Car', 'InsectEPGSmallTrain', 
             'InsectEPGRegularTrain', 'Lightning2', 'AtrialFibrilation', 'SmallKitchenAppliances']
+
+done = ['ShakeGestureWiimoteZ', 'PLAID', 'PickupGestureWiimoteZ', 'GesturePebbleZ2', 'GesturePebbleZ1', 'AllGestureWiimoteZ', 
+        'AllGestureWiimoteY', 'AllGestureWiimoteX', 'PenDigits', 'SmoothSubspace', 'MelbournePedestrian', 'ItalyPowerDemand', 
+        'Chinatown', 'JapaneseVowels', 'RacketSports', 'InsectWingbeat', 'LSST', 'Libras', 'Crop', 'FingerMovements', 'NATOPS', 
+        'SyntheticControl', 'FaceDetection', 'SonyAIBORobotSurface2', 'Ering', 'SonyAIBORobotSurface1', 'ProximalPhalanxTW', 
+        'ProximalPhalanxOutlineCorrect', 'ProximalPhalanxOutlineAgeGroup', 'PhalangesOutlinesCorrect', 'MiddlePhalanxTW', 
+        'MiddlePhalanxOutlineCorrect', 'MiddlePhalanxOutlineAgeGroup', 'DistalPhalanxTW', 'DistalPhalanxOutlineCorrect', 
+        'DistalPhalanxOutlineAgeGroup', 'TwoLeadECG', 'MoteStrain', 'SpokenArabicDigits', 'ECG200', 'MedicalImages', 
+        'BasicMotions', 'TwoPatterns', 'SwedishLeaf', 'CBF', 'BME', 'FacesUCR', 'FaceAll', 'ECGFiveDays', 'ECG5000', 'PowerCons', 
+        'Plane', 'PEMS', 'ArticularyWordRecognition', 'UMD', 'GunPointOldVersusYoung', 'GunPointMaleVersusFemale', 'GunPointAgeSpan', 
+        'GunPoint', 'Wafer', 'Handwriting', 'ChlorineConcentration', 'Adiac', 'CharacterTrajectories', 'Fungi', 'Epilepsy', 'Phoneme', 
+        'Wine', 'Strawberry', 'ArrowHead', 'InsectWingbeatSound', 'WordSynonyms', 'FiftyWords', 'DuckDuckGeese', 'Trace', 
+        'ToeSegmentation1', 'Coffee', 'DodgerLoopWeekend', 'DodgerLoopGame', 'DodgerLoopDay', 'CricketZ', 'CricketY', 'CricketX', 
+        'FreezerSmallTrain', 'FreezerRegularTrain', 'UWaveGestureLibraryZ', 'UWaveGestureLibraryY', 'UWaveGestureLibraryX', 
+        'UWaveGestureLibrary', 'Lightning7', 'ToeSegmentation2', 'DiatomSizeReduction', 'FaceFour']
 
 if not os.path.isdir('results/genetic'): 
     os.makedirs('results/genetic')
