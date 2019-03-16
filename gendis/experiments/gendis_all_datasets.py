@@ -251,8 +251,9 @@ def fit_voting(X_distances_train, y_train, X_distances_test, y_test, out_path):
     ]
 
     accuracies = []
+    min_samples = Counter(y_train).most_common()[-1][1]
     for name, clf in models:
-        cv_acc = np.mean(cross_val_score(clf, X_distances_train, y_train, cv=10, scoring='accuracy'))
+        cv_acc = np.mean(cross_val_score(clf, X_distances_train, y_train, cv=min(min_samples, 10) , scoring='accuracy'))
         accuracies.append(cv_acc)
 
     acc_sum = sum(accuracies)
@@ -346,10 +347,9 @@ def gendis_discovery(X_train, y_train, X_test, y_test, shap_out_path, pred_out_p
 
 data_loader = UCR_UEA_datasets()
 
-datasets = ['GestureMidAirD3', 'GestureMidAirD2', 
-            'GestureMidAirD1', 'Symbols', 'HandMovementDirection', 'Heartbeat', 'Yoga', 'OSULeaf', 'Ham', 'Meat', 'Fish', 'Beef', 'ShapeletSim', 
+datasets = ['HandMovementDirection', 'Heartbeat', 'Yoga', 'OSULeaf', 'Ham', 'Meat', 'Fish', 'Beef', 'ShapeletSim', 
             'FordB', 'FordA', 'ShapesAll', 'Herring', 'Earthquakes', 'BirdChicken', 'BeetleFly', 'OliveOil', 'Car', 'InsectEPGSmallTrain', 
-            'InsectEPGRegularTrain', 'Lightning2', 'AtrialFibrilation', 'SmallKitchenAppliances']
+            'InsectEPGRegularTrain', 'Lightning2', 'AtrialFibrilation', 'SmallKitchenAppliances', 'Symbols', 'FaceFour']
 
 done = ['ShakeGestureWiimoteZ', 'PLAID', 'PickupGestureWiimoteZ', 'GesturePebbleZ2', 'GesturePebbleZ1', 'AllGestureWiimoteZ', 
         'AllGestureWiimoteY', 'AllGestureWiimoteX', 'PenDigits', 'SmoothSubspace', 'MelbournePedestrian', 'ItalyPowerDemand', 
@@ -364,7 +364,7 @@ done = ['ShakeGestureWiimoteZ', 'PLAID', 'PickupGestureWiimoteZ', 'GesturePebble
         'Wine', 'Strawberry', 'ArrowHead', 'InsectWingbeatSound', 'WordSynonyms', 'FiftyWords', 'DuckDuckGeese', 'Trace', 
         'ToeSegmentation1', 'Coffee', 'DodgerLoopWeekend', 'DodgerLoopGame', 'DodgerLoopDay', 'CricketZ', 'CricketY', 'CricketX', 
         'FreezerSmallTrain', 'FreezerRegularTrain', 'UWaveGestureLibraryZ', 'UWaveGestureLibraryY', 'UWaveGestureLibraryX', 
-        'UWaveGestureLibrary', 'Lightning7', 'ToeSegmentation2', 'DiatomSizeReduction', 'FaceFour']
+        'UWaveGestureLibrary', 'Lightning7', 'ToeSegmentation2', 'DiatomSizeReduction']
 
 if not os.path.isdir('results/genetic'): 
     os.makedirs('results/genetic')
