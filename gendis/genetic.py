@@ -32,7 +32,11 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_array
 from sklearn.utils.validation import check_is_fitted
 from sklearn.metrics import log_loss, accuracy_score, f1_score
-from gendis.pairwise_dist import _pdist
+
+try:
+    from gendis.pairwise_dist import _pdist
+except:
+    from pairwise_dist import _pdist
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC

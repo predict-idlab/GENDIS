@@ -25,6 +25,6 @@ setup(name='GENDIS',
           'terminaltables==3.1.0'
       ],
       test_suite='nose2.collector.collector',
-      ext_modules = cythonize('gendis/pairwise_dist.pyx'),
+      ext_modules = cythonize(['gendis/pairwise_dist.pyx']),
       include_dirs=[np.get_include()]
      )

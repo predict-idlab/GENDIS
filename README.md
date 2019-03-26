@@ -12,6 +12,8 @@ We currently support Python 3.5 & Python 3.6. For installation, there are two al
 1. Clone the repository `https://github.com/IBCNServices/GENDIS.git` and run `(python3 -m) pip -r install requirements.txt`
 2. GENDIS is hosted on PyPi. You can just run `(python3 -m) pip install gendis` to add gendis to your dist-packages (you can use it from everywhere).
 
+**Make sure NumPy and Cython is already installed (`pip install numpy` and `pip install Cython`), since that is required for the setup script.**
+
 ## Tutorial & Example
 
 ### 1. Loading & preprocessing the datasets
@@ -39,7 +41,7 @@ from gendis.genetic import GeneticExtractor
 genetic_extractor = GeneticExtractor(population_size=50, iterations=25, verbose=False, 
                                      normed=False, add_noise_prob=0.3, add_shapelet_prob=0.3, 
                                      wait=10, plot='notebook', remove_shapelet_prob=0.3, 
-                                     crossover_prob=0.66, n_jobs=4)
+                                     crossover_prob=0.66, n_jobs=4, max_len=len(X_train) // 2)
 ```
 
 ### 3. Fit the `GeneticExtractor` and construct distance matrix
