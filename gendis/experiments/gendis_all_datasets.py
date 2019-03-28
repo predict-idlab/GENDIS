@@ -261,7 +261,7 @@ def fit_voting(X_distances_train, y_train, X_distances_test, y_test, out_path):
     for acc in accuracies:
         norm_accuracies.append(acc/acc_sum)
 
-    voting = VotingClassifier(models, weights=norm_accuracies, voting='soft')
+    voting = VotingClassifier(models, weights=norm_accuracies, voting='hard')
     voting.fit(X_distances_train, y_train)
     hard_preds = voting.predict(X_distances_test)
     proba_preds = voting.predict_proba(X_distances_test)
