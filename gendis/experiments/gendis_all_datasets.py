@@ -83,12 +83,12 @@ class RotationTreeClassifier(DecisionTreeClassifier):
 
         return fast_dot(X, self.rotation_matrix)
 
-    def pca_algorithm(self):
+    def pca_algorithm(self, n_components=None):
         """ Deterimine PCA algorithm to use. """
         if self.rotation_algo == 'randomized':
-            return RandomizedPCA(random_state=self.random_state)
+            return PCA(random_state=self.random_state, n_components=n_components)
         elif self.rotation_algo == 'pca':
-            return PCA()
+            return PCA(svd_solver='randomized', n_components=n_components)
         else:
             raise ValueError("`rotation_algo` must be either "
                              "'pca' or 'randomized'.")
@@ -99,12 +99,12 @@ class RotationTreeClassifier(DecisionTreeClassifier):
         self.rotation_matrix = np.zeros((n_features, n_features),
                                         dtype=np.float32)
         for i, subset in enumerate(
-                random_feature_subsets(X, int(np.sqrt(len(X[0]))),
+                random_feature_subsets(X, min(int(np.sqrt(len(X[0]))), len(X)),
                                        random_state=self.random_state)):
             # take a 75% bootstrap from the rows
-            x_sample = resample(X, n_samples=int(n_samples*0.75),
-                                random_state=10*i)
-            pca = self.pca_algorithm()
+            x_sample = resample(X, n_samples=n_samples,
+                                random_state=10*i, replace=True)
+            pca = self.pca_algorithm(n_components=len(subset))
             pca.fit(x_sample[:, subset])
             self.rotation_matrix[np.ix_(subset, subset)] = pca.components_
 
