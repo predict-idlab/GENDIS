@@ -251,7 +251,7 @@ def fit_voting(X_distances_train, y_train, X_distances_test, y_test, out_path):
     ]
 
     accuracies = []
-    min_samples = Counter(y_train).most_common()[-1][1]
+    min_samples = min(list(Counter(y_train).values())) - 1
     for name, clf in models:
         cv_acc = np.mean(cross_val_score(clf, X_distances_train, y_train, cv=min(min_samples, 10) , scoring='accuracy'))
         accuracies.append(cv_acc)
