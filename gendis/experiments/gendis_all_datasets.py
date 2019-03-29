@@ -251,7 +251,7 @@ def fit_voting(X_distances_train, y_train, X_distances_test, y_test, out_path):
     ]
 
     accuracies = []
-    min_samples = min(list(Counter(y_train).values())) - 1
+    min_samples = max(2, min(list(Counter(y_train).values())) - 1)
     for name, clf in models:
         cv_acc = np.mean(cross_val_score(clf, X_distances_train, y_train, cv=min(min_samples, 10) , scoring='accuracy'))
         accuracies.append(cv_acc)
@@ -347,10 +347,10 @@ def gendis_discovery(X_train, y_train, X_test, y_test, shap_out_path, pred_out_p
 
 data_loader = UCR_UEA_datasets()
 
-datasets = ['DiatomSizeReduction', 'InlineSkate', 'HandOutlines', 'Fiftywords', 'Phoneme', 'UWaveGestureLibraryAll', 'MiddlePhalanxOC', 
+datasets = ['InlineSkate', 'HandOutlines', 'Fiftywords', 'Phoneme', 'UWaveGestureLibraryAll', 'MiddlePhalanxOC', 
             'DistalPhalanxOAG', 'LargeKitchenAppliances', 'MiddlePhalanxOAG', 'ProximalPhalanxOC', 'DistalPhalanxOC', 'NonInvFetalECGThorax', 
             'ScreenType', 'Mallat', 'RefrigerationDevices', 'StarlightCurves', 'FaceFour', 'SmallKitchenAppliances', 'Haptics', 
-            'CinCECGtorso', 'WormsTwoClass', 'Worms', 'Symbols', 'Computers', 'ProximalPhalanxOAG', 'ElectricDevices']
+            'CinCECGtorso', 'WormsTwoClass', 'Worms', 'Symbols', 'Computers', 'ProximalPhalanxOAG', 'ElectricDevices', 'DiatomSizeReduction']
 
 done = ['ShakeGestureWiimoteZ', 'PLAID', 'PickupGestureWiimoteZ', 'GesturePebbleZ2', 'GesturePebbleZ1', 'AllGestureWiimoteZ', 
         'AllGestureWiimoteY', 'AllGestureWiimoteX', 'PenDigits', 'SmoothSubspace', 'MelbournePedestrian', 'ItalyPowerDemand', 
