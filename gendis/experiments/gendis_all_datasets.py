@@ -229,15 +229,17 @@ def fit_svm(X_distances_train, y_train, X_distances_test, y_test, out_path):
     proba_preds.to_csv(out_path.split('.')[0]+'_svm_proba.csv')
 
 def fit_voting(X_distances_train, y_train, X_distances_test, y_test, out_path):
+    min_samples = min(3, min(list(Counter(y_train).values())))
+    print(Counter(y_train))
     svm_linear = Pipeline(steps=[('scale', MinMaxScaler()), ('svm', SVC(probability=True, kernel='linear'))])
     svm_quadratic = Pipeline(steps=[('scale', MinMaxScaler()), ('svm', SVC(probability=True, kernel='poly', degree=2))])
     rf = RandomForestClassifier(n_estimators=500)
-    knn = GridSearchCV(KNeighborsClassifier(weights='distance', metric='euclidean'), {'n_neighbors': [1, 3, 5, min(7, len(X_train) // 5), min(13, len(X_train) // 5), min(25, len(X_train) // 5)]})
+    knn = GridSearchCV(KNeighborsClassifier(weights='distance', metric='euclidean'), {'n_neighbors': [1, 3, 5, min(7, len(X_train) // 5), min(13, len(X_train) // 5), min(25, len(X_train) // 5)]}, cv=min_samples)
     rot = RotationForestClassifier(n_estimators=50)
     # We use logreg instead of naive bayes and bayesian networks
-    logreg = GridSearchCV(LogisticRegression(), {'penalty': ['l1', 'l2']})
+    logreg = GridSearchCV(LogisticRegression(), {'penalty': ['l1', 'l2']}, cv=min_samples)
     # Apply some hyper-parameter tuning, since WEKA applies pruning (c4.5 algorithm)
-    dt = GridSearchCV(DecisionTreeClassifier(), {'min_samples_leaf': [1, 3, 5, min(7, len(X_train) // 5), min(13, len(X_train) // 5), min(25, len(X_train) // 5)]})
+    dt = GridSearchCV(DecisionTreeClassifier(), {'min_samples_leaf': [1, 3, 5, min(7, len(X_train) // 5), min(13, len(X_train) // 5), min(25, len(X_train) // 5)]}, cv=min_samples)
     nb = ComplementNB(norm=True)
 
     models = [
@@ -251,9 +253,9 @@ def fit_voting(X_distances_train, y_train, X_distances_test, y_test, out_path):
     ]
 
     accuracies = []
-    min_samples = max(2, min(list(Counter(y_train).values())) - 1)
+    
     for name, clf in models:
-        cv_acc = np.mean(cross_val_score(clf, X_distances_train, y_train, cv=min(min_samples, 10) , scoring='accuracy'))
+        cv_acc = np.mean(cross_val_score(clf, X_distances_train, y_train, cv=min(10, min(list(Counter(y_train).values()))) , scoring='accuracy'))
         accuracies.append(cv_acc)
 
     acc_sum = sum(accuracies)
