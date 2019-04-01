@@ -261,7 +261,7 @@ def fit_voting(X_distances_train, y_train, X_distances_test, y_test, out_path):
     for acc in accuracies:
         norm_accuracies.append(acc/acc_sum)
 
-    voting = VotingClassifier(models, weights=norm_accuracies, voting='hard')
+    voting = VotingClassifier(models, weights=norm_accuracies, voting='soft')
     voting.fit(X_distances_train, y_train)
     hard_preds = voting.predict(X_distances_test)
     proba_preds = voting.predict_proba(X_distances_test)
@@ -347,10 +347,10 @@ def gendis_discovery(X_train, y_train, X_test, y_test, shap_out_path, pred_out_p
 
 data_loader = UCR_UEA_datasets()
 
-datasets = ['InlineSkate', 'HandOutlines', 'Fiftywords', 'Phoneme', 'UWaveGestureLibraryAll', 'MiddlePhalanxOC', 
+datasets = ['DiatomSizeReduction', 'InlineSkate', 'HandOutlines', 'Fiftywords', 'Phoneme', 'UWaveGestureLibraryAll', 'MiddlePhalanxOC', 
             'DistalPhalanxOAG', 'LargeKitchenAppliances', 'MiddlePhalanxOAG', 'ProximalPhalanxOC', 'DistalPhalanxOC', 'NonInvFetalECGThorax', 
             'ScreenType', 'Mallat', 'RefrigerationDevices', 'StarlightCurves', 'FaceFour', 'SmallKitchenAppliances', 'Haptics', 
-            'CinCECGtorso', 'WormsTwoClass', 'Worms', 'Symbols', 'Computers', 'ProximalPhalanxOAG', 'ElectricDevices', 'DiatomSizeReduction']
+            'CinCECGtorso', 'WormsTwoClass', 'Worms', 'Symbols', 'Computers', 'ProximalPhalanxOAG', 'ElectricDevices']
 
 done = ['ShakeGestureWiimoteZ', 'PLAID', 'PickupGestureWiimoteZ', 'GesturePebbleZ2', 'GesturePebbleZ1', 'AllGestureWiimoteZ', 
         'AllGestureWiimoteY', 'AllGestureWiimoteX', 'PenDigits', 'SmoothSubspace', 'MelbournePedestrian', 'ItalyPowerDemand', 
