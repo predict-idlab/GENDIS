@@ -234,7 +234,7 @@ def fit_voting(X_distances_train, y_train, X_distances_test, y_test, out_path):
     svm_linear = Pipeline(steps=[('scale', MinMaxScaler()), ('svm', SVC(probability=True, kernel='linear'))])
     svm_quadratic = Pipeline(steps=[('scale', MinMaxScaler()), ('svm', SVC(probability=True, kernel='poly', degree=2))])
     rf = RandomForestClassifier(n_estimators=500)
-    knn = GridSearchCV(KNeighborsClassifier(weights='distance', metric='euclidean'), {'n_neighbors': [1, 3, 5, min(7, len(X_train) // 5), min(13, len(X_train) // 5), min(25, len(X_train) // 5)]}, cv=min_samples)
+    knn = GridSearchCV(KNeighborsClassifier(weights='distance', metric='euclidean'), {'n_neighbors': [1, min(3, len(X_train) // 5), min(5, len(X_train) // 5), min(7, len(X_train) // 5), min(13, len(X_train) // 5), min(25, len(X_train) // 5)]}, cv=min_samples)
     rot = RotationForestClassifier(n_estimators=50)
     # We use logreg instead of naive bayes and bayesian networks
     logreg = GridSearchCV(LogisticRegression(), {'penalty': ['l1', 'l2']}, cv=min_samples)
@@ -349,10 +349,10 @@ def gendis_discovery(X_train, y_train, X_test, y_test, shap_out_path, pred_out_p
 
 data_loader = UCR_UEA_datasets()
 
-datasets = ['DiatomSizeReduction', 'InlineSkate', 'HandOutlines', 'Fiftywords', 'Phoneme', 'UWaveGestureLibraryAll', 'MiddlePhalanxOC', 
+datasets = ['InlineSkate', 'HandOutlines', 'Fiftywords', 'Phoneme', 'UWaveGestureLibraryAll', 'MiddlePhalanxOC', 
             'DistalPhalanxOAG', 'LargeKitchenAppliances', 'MiddlePhalanxOAG', 'ProximalPhalanxOC', 'DistalPhalanxOC', 'NonInvFetalECGThorax', 
             'ScreenType', 'Mallat', 'RefrigerationDevices', 'StarlightCurves', 'FaceFour', 'SmallKitchenAppliances', 'Haptics', 
-            'CinCECGtorso', 'WormsTwoClass', 'Worms', 'Symbols', 'Computers', 'ProximalPhalanxOAG', 'ElectricDevices']
+            'CinCECGtorso', 'WormsTwoClass', 'Worms', 'Symbols', 'Computers', 'ProximalPhalanxOAG', 'ElectricDevices', 'DiatomSizeReduction']
 
 done = ['ShakeGestureWiimoteZ', 'PLAID', 'PickupGestureWiimoteZ', 'GesturePebbleZ2', 'GesturePebbleZ1', 'AllGestureWiimoteZ', 
         'AllGestureWiimoteY', 'AllGestureWiimoteX', 'PenDigits', 'SmoothSubspace', 'MelbournePedestrian', 'ItalyPowerDemand', 
