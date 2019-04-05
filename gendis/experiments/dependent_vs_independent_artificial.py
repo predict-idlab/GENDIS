@@ -5,6 +5,8 @@ from matplotlib.lines import Line2D
 from matplotlib.markers import MarkerStyle
 import sys
 sys.path.append('../other')
+sys.path.append('..')
+from genetic import GeneticExtractor
 from sax import SAXExtractor
 import other_util as util
 from sklearn.linear_model import LogisticRegression
@@ -25,55 +27,14 @@ def calculate_distance_matrix(X, shapelets):
             D[smpl_idx, shap_idx] = dist
     return D
 
-def extract_shapelets_with_tree(X, y, min_len, max_len, shapelets=[]):
-    if len(set(y)) <= 1:
-        return []
-
-    label_map = {}
-    for i, lab in enumerate(set(y)):
-        label_map[lab] = i
-    y = pd.Series(y).map(label_map).values
-
-    # Extract the best shapelet
-    sax = SAXExtractor(alphabet_size=4, sax_length=16, nr_candidates=100, 
-                       iterations=5, mask_size=3)
-    shapelet = sax.extract(X, y, min_len=min_len, max_len=max_len)[0]
-
-    # Partition X and call function recursively
-    L = []
-    X_left, y_left, X_right, y_right = [], [], [], []
-    for k in range(len(X)):
-        D = X[k, :]
-        dist = util.sdist_no_norm(shapelet, D)
-        L.append((dist, y[k]))
-    threshold = util.get_threshold(L)
-
-    for ts, label in zip(X, y):
-        if util.sdist_no_norm(shapelet, ts) <= threshold:
-            X_left.append(ts)
-            y_left.append(label)
-        else:
-            X_right.append(ts)
-            y_right.append(label)
-
-    X_left = np.array(X_left)
-    X_right = np.array(X_right)
-    y_left = np.array(y_left)
-    y_right = np.array(y_right)
-
-    shapelets = [shapelet]
-    shapelets += extract_shapelets_with_tree(X_left, y_left, min_len, max_len)
-    shapelets += extract_shapelets_with_tree(X_right, y_right, min_len, max_len)
-    return shapelets
-
 
 ##############################################################################
 #                  1. Generate imbalanced artificial data                    #
 ##############################################################################
 
-ts1 = np.array([0, 1, 0, -1, 0])
-ts2 = np.array([1, 1, 0, 1, 0])
-ts3 = np.array([-1, -1, 0, -1, 0])
+ts1 = np.array([0, 0, 0, 0, 0])
+ts2 = np.array([1, -1, 1, -1, -1])
+ts3 = np.array([-1, 1, -1, 1, 1])
 
 X_train, X_test = [], []
 y_train, y_test = [], []
@@ -142,8 +103,9 @@ plt.savefig("results/data.svg", bbox_inches='tight')
 #                            3. Dependent discovery                          #
 ##############################################################################
 
-dependent_shapelets = extract_shapelets_with_tree(X_train, y_train, 3, 5)
-dependent_shapelets = np.array([np.array(x) for x in dependent_shapelets])
+gen = GeneticExtractor(iterations=25, population_size=25, verbose=False)
+gen.fit(X_train, y_train)
+dependent_shapelets = gen.shapelets
 
 ##############################################################################
 #                           4. Independent discovery                         #
@@ -201,6 +163,8 @@ for k, c in zip(range(3), ['#edf8b1', '#7fcdbb', '#2c7fb8']):
                         [x[1] for x in filtered_features], 
                         s=100,
                         c=cmap(k / 2), marker='x', label='Class {} -- independent'.format(k))
+
+plt.show()
 
 # Upper-left
 ax[0][0].set_xlim(0, 0.1)

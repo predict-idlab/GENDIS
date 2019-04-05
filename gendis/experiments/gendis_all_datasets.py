@@ -349,10 +349,10 @@ def gendis_discovery(X_train, y_train, X_test, y_test, shap_out_path, pred_out_p
 
 data_loader = UCR_UEA_datasets()
 
-datasets = ['InlineSkate', 'HandOutlines', 'Fiftywords', 'Phoneme', 'UWaveGestureLibraryAll', 'MiddlePhalanxOC', 
+datasets = ['Phoneme', 'UWaveGestureLibraryAll', 'MiddlePhalanxOC', 
             'DistalPhalanxOAG', 'LargeKitchenAppliances', 'MiddlePhalanxOAG', 'ProximalPhalanxOC', 'DistalPhalanxOC', 'NonInvFetalECGThorax', 
             'ScreenType', 'Mallat', 'RefrigerationDevices', 'StarlightCurves', 'FaceFour', 'SmallKitchenAppliances', 'Haptics', 
-            'CinCECGtorso', 'WormsTwoClass', 'Worms', 'Symbols', 'Computers', 'ProximalPhalanxOAG', 'ElectricDevices', 'DiatomSizeReduction']
+            'CinCECGtorso', 'WormsTwoClass', 'Worms', 'Symbols', 'Computers', 'ProximalPhalanxOAG', 'ElectricDevices', 'DiatomSizeReduction', 'HandOutlines']
 
 done = ['ShakeGestureWiimoteZ', 'PLAID', 'PickupGestureWiimoteZ', 'GesturePebbleZ2', 'GesturePebbleZ1', 'AllGestureWiimoteZ', 
         'AllGestureWiimoteY', 'AllGestureWiimoteX', 'PenDigits', 'SmoothSubspace', 'MelbournePedestrian', 'ItalyPowerDemand', 
