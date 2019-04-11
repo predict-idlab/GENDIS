@@ -349,10 +349,10 @@ def gendis_discovery(X_train, y_train, X_test, y_test, shap_out_path, pred_out_p
 
 data_loader = UCR_UEA_datasets()
 
-datasets = ['Phoneme', 'UWaveGestureLibraryAll', 'MiddlePhalanxOC', 
-            'DistalPhalanxOAG', 'LargeKitchenAppliances', 'MiddlePhalanxOAG', 'ProximalPhalanxOC', 'DistalPhalanxOC', 'NonInvFetalECGThorax', 
-            'ScreenType', 'Mallat', 'RefrigerationDevices', 'StarlightCurves', 'FaceFour', 'SmallKitchenAppliances', 'Haptics', 
-            'CinCECGtorso', 'WormsTwoClass', 'Worms', 'Symbols', 'Computers', 'ProximalPhalanxOAG', 'ElectricDevices', 'DiatomSizeReduction', 'HandOutlines']
+datasets = ['DiatomSizeReduction', 'StarlightCurves', 'Haptics', 
+            'CinCECGtorso', 'WormsTwoClass', 'Worms', 'Symbols', 
+            'Computers', 'ProximalPhalanxOAG', 'ElectricDevices', 
+            'HandOutlines', 'RefrigerationDevices']
 
 done = ['ShakeGestureWiimoteZ', 'PLAID', 'PickupGestureWiimoteZ', 'GesturePebbleZ2', 'GesturePebbleZ1', 'AllGestureWiimoteZ', 
         'AllGestureWiimoteY', 'AllGestureWiimoteX', 'PenDigits', 'SmoothSubspace', 'MelbournePedestrian', 'ItalyPowerDemand', 
@@ -370,7 +370,10 @@ done = ['ShakeGestureWiimoteZ', 'PLAID', 'PickupGestureWiimoteZ', 'GesturePebble
         'UWaveGestureLibrary', 'Lightning7', 'ToeSegmentation2', 'DiatomSizeReduction', 'HandMovementDirection', 'Heartbeat', 
         'Yoga', 'OSULeaf', 'Ham', 'Meat', 'Fish', 'Beef', 'ShapeletSim', 
         'FordB', 'FordA', 'ShapesAll', 'Herring', 'Earthquakes', 'BirdChicken', 'BeetleFly', 'OliveOil', 'Car', 'InsectEPGSmallTrain', 
-        'InsectEPGRegularTrain', 'Lightning2', 'AtrialFibrilation', 'SmallKitchenAppliances', 'Symbols', 'FaceFour']
+        'InsectEPGRegularTrain', 'Lightning2', 'AtrialFibrilation', 'SmallKitchenAppliances', 'Symbols', 'FaceFour',
+        'Phoneme', 'UWaveGestureLibraryAll', 'MiddlePhalanxOC', 
+        'DistalPhalanxOAG', 'LargeKitchenAppliances', 'MiddlePhalanxOAG', 'ProximalPhalanxOC', 'DistalPhalanxOC', 'NonInvFetalECGThorax', 
+        'ScreenType', 'Mallat', 'SmallKitchenAppliances']
 
 if not os.path.isdir('results/genetic'): 
     os.makedirs('results/genetic')

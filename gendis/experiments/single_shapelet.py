@@ -95,7 +95,7 @@ bf_shapelet = bfe.extract(X, y)[0]
 fig, ax = plt.subplots(2, 3, sharey=True)
 
 ax[0][0].axis('off')
-ax[0][0].annotate('Brute Force', (0, 0.5), fontsize=24, va='center', ha='left')
+ax[0][0].annotate('Brute Force', (0, 0), fontsize=24, va='center', ha='left')
 
 ax[0][1].axis('off')
 ax[0][1].plot(range(len(bf_shapelet)), bf_shapelet, c=cmap(0.))
@@ -113,7 +113,7 @@ ax[0][2].axis('off')
 
 
 ax[1][0].axis('off')
-ax[1][0].annotate('Genetic', (0, 0.5), fontsize=24, va='center', ha='left')
+ax[1][0].annotate('Genetic', (0, 0), fontsize=24, va='center', ha='left')
 
 ax[1][1].axis('off')
 ax[1][1].plot(range(len(gen_shapelet)), gen_shapelet, c=cmap(0.))
