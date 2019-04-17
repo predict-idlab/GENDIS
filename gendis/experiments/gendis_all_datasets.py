@@ -349,31 +349,18 @@ def gendis_discovery(X_train, y_train, X_test, y_test, shap_out_path, pred_out_p
 
 data_loader = UCR_UEA_datasets()
 
-datasets = ['DiatomSizeReduction', 'StarlightCurves', 'Haptics', 
-            'CinCECGtorso', 'WormsTwoClass', 'Worms', 'Symbols', 
-            'Computers', 'ProximalPhalanxOAG', 'ElectricDevices', 
-            'HandOutlines', 'RefrigerationDevices']
+datasets = ['Phoneme', 'NonInvasiveFatalECGThorax1', 'NonInvasiveFatalECGThorax2', 'CinCECGTorso', 'HandOutlines', 'StarLightCurves']
 
-done = ['ShakeGestureWiimoteZ', 'PLAID', 'PickupGestureWiimoteZ', 'GesturePebbleZ2', 'GesturePebbleZ1', 'AllGestureWiimoteZ', 
-        'AllGestureWiimoteY', 'AllGestureWiimoteX', 'PenDigits', 'SmoothSubspace', 'MelbournePedestrian', 'ItalyPowerDemand', 
-        'Chinatown', 'JapaneseVowels', 'RacketSports', 'InsectWingbeat', 'LSST', 'Libras', 'Crop', 'FingerMovements', 'NATOPS', 
-        'SyntheticControl', 'FaceDetection', 'SonyAIBORobotSurface2', 'Ering', 'SonyAIBORobotSurface1', 'ProximalPhalanxTW', 
-        'ProximalPhalanxOutlineCorrect', 'ProximalPhalanxOutlineAgeGroup', 'PhalangesOutlinesCorrect', 'MiddlePhalanxTW', 
-        'MiddlePhalanxOutlineCorrect', 'MiddlePhalanxOutlineAgeGroup', 'DistalPhalanxTW', 'DistalPhalanxOutlineCorrect', 
-        'DistalPhalanxOutlineAgeGroup', 'TwoLeadECG', 'MoteStrain', 'SpokenArabicDigits', 'ECG200', 'MedicalImages', 
-        'BasicMotions', 'TwoPatterns', 'SwedishLeaf', 'CBF', 'BME', 'FacesUCR', 'FaceAll', 'ECGFiveDays', 'ECG5000', 'PowerCons', 
-        'Plane', 'PEMS', 'ArticularyWordRecognition', 'UMD', 'GunPointOldVersusYoung', 'GunPointMaleVersusFemale', 'GunPointAgeSpan', 
-        'GunPoint', 'Wafer', 'Handwriting', 'ChlorineConcentration', 'Adiac', 'CharacterTrajectories', 'Fungi', 'Epilepsy', 'Phoneme', 
-        'Wine', 'Strawberry', 'ArrowHead', 'InsectWingbeatSound', 'WordSynonyms', 'FiftyWords', 'DuckDuckGeese', 'Trace', 
-        'ToeSegmentation1', 'Coffee', 'DodgerLoopWeekend', 'DodgerLoopGame', 'DodgerLoopDay', 'CricketZ', 'CricketY', 'CricketX', 
-        'FreezerSmallTrain', 'FreezerRegularTrain', 'UWaveGestureLibraryZ', 'UWaveGestureLibraryY', 'UWaveGestureLibraryX', 
-        'UWaveGestureLibrary', 'Lightning7', 'ToeSegmentation2', 'DiatomSizeReduction', 'HandMovementDirection', 'Heartbeat', 
-        'Yoga', 'OSULeaf', 'Ham', 'Meat', 'Fish', 'Beef', 'ShapeletSim', 
-        'FordB', 'FordA', 'ShapesAll', 'Herring', 'Earthquakes', 'BirdChicken', 'BeetleFly', 'OliveOil', 'Car', 'InsectEPGSmallTrain', 
-        'InsectEPGRegularTrain', 'Lightning2', 'AtrialFibrilation', 'SmallKitchenAppliances', 'Symbols', 'FaceFour',
-        'Phoneme', 'UWaveGestureLibraryAll', 'MiddlePhalanxOC', 
-        'DistalPhalanxOAG', 'LargeKitchenAppliances', 'MiddlePhalanxOAG', 'ProximalPhalanxOC', 'DistalPhalanxOC', 'NonInvFetalECGThorax', 
-        'ScreenType', 'Mallat', 'SmallKitchenAppliances']
+done = ['Beef', 'OSULeaf', 'ScreenType', 'Adiac', 'Fish', 'Car', 'Ham', 'Worms', 'RefrigerationDevices', 'ChlorineConcentration', 
+        'CricketZ', 'Wine', 'CricketY', 'ArrowHead', 'BirdChicken', 'SmallKitchenAppliances', 'Haptics', 'ShapesAll', 'ElectricDevices', 
+        'FordA', 'Herring', 'SwedishLeaf', 'CricketX', 'SonyAIBORobotSurface2', 'InsectWingbeatSound', 'WormsTwoClass', 'Computers', 
+        'TwoLeadECG', 'ToeSegmentation1', 'GunPoint', 'OliveOil', 'LargeKitchenAppliances', 'UWaveGestureLibraryY', 'MoteStrain', 'FaceAll', 
+        'ProximalPhalanxOutlineCorrect', 'FordB', 'Coffee', 'ToeSegmentation2', 'Strawberry', 'Plane', 'DistalPhalanxOutlineCorrect', 
+        'FacesUCR', 'MiddlePhalanxOutlineCorrect', 'BeetleFly', 'UWaveGestureLibraryX', 'Wafer', 'UWaveGestureLibraryZ', 'ECG5000', 
+        'CBF', 'Trace', 'ProximalPhalanxOutlineAgeGroup', 'ItalyPowerDemand', 'SyntheticControl', 'TwoPatterns', 'DistalPhalanxOutlineAgeGroup', 
+        'ProximalPhalanxTW', 'UWaveGestureLibraryAll', 'Yoga', 'Mallat', 'PhalangesOutlinesCorrect', 'FiftyWords', 'Meat', 'ECG200', 'ECGFiveDays', 
+        'MedicalImages', 'MiddlePhalanxTW', 'InlineSkate', 'Earthquakes', 'Lightning7', 'MiddlePhalanxOutlineAgeGroup', 'DiatomSizeReduction', 
+        'ShapeletSim', 'SonyAIBORobotSurface1', 'Symbols', 'DistalPhalanxTW', 'WordSynonyms', 'FaceFour', 'Lightning2']
 
 if not os.path.isdir('results/genetic'): 
     os.makedirs('results/genetic')
