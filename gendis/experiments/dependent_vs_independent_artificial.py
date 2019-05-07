@@ -105,7 +105,6 @@ plt.savefig("results/data.svg", bbox_inches='tight')
 
 gen = GeneticExtractor(iterations=50, population_size=100, wait=10, verbose=True)
 gen.fit(X_train, y_train)
-dependent_shapelets = gen.shapelets
 
 ##############################################################################
 #                           4. Independent discovery                         #
@@ -116,6 +115,12 @@ sax = SAXExtractor(alphabet_size=4, sax_length=16, nr_candidates=100,
 independent_shapelets = sax.extract(X_train, y_train, min_len=3, max_len=5, 
                                     nr_shapelets=2)
 independent_shapelets = np.array([np.array(x) for x in independent_shapelets])
+dependent_shapelets = gen.shapelets[:2]
+
+
+print('GENDIS extracted {} shapelets...'.format(len(dependent_shapelets)))
+print('ST extracted {} shapelets...'.format(len(independent_shapelets)))
+
 
 ##############################################################################
 #                       5. Plot discovered shapelets                         #
