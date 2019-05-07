@@ -1,5 +1,6 @@
 from sklearn.metrics import log_loss
 from sklearn.linear_model import LogisticRegression
+import numpy as np
 
 try:
     from gendis.pairwise_dist import _pdist
