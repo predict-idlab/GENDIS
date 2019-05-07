@@ -39,6 +39,8 @@ try:
 except:
     from pairwise_dist import _pdist
 
+from inspect import signature
+
 # Ignore warnings
 import warnings; warnings.filterwarnings('ignore')
 
@@ -148,6 +150,9 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
         if fitness is None:
             self.fitness = logloss_fitness
         else:
+            # Do some initial checks
+            assert callable(fitness)
+            assert len(signature(fitness).parameters) == 5
             self.fitness = fitness
 
         # Attributes
