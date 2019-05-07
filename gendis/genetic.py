@@ -11,9 +11,6 @@ import pandas as pd
 # Serialization
 import pickle
 
-# Motif extraction
-from gendis.mstamp_stomp import mstamp as mstamp_stomp
-
 # Evolutionary algorithms framework
 from deap import base, creator, algorithms, tools
 
@@ -31,15 +28,13 @@ import multiprocessing
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_array
 from sklearn.utils.validation import check_is_fitted
-from sklearn.metrics import log_loss, accuracy_score, f1_score
+
+from fitness import logloss_fitness
 
 try:
     from gendis.pairwise_dist import _pdist
 except:
     from pairwise_dist import _pdist
-
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
 
 # Ignore warnings
 import warnings; warnings.filterwarnings('ignore')
@@ -134,7 +129,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
     """
     def __init__(self, population_size=50, iterations=25, verbose=False, 
                  normed=False, mutation_prob=0.1, wait=10, plot=None,
-                 crossover_prob=0.4, n_jobs=4, max_len=None):
+                 crossover_prob=0.4, n_jobs=4, max_len=None, fitness=None):
         # Hyper-parameters
         self.population_size = population_size
         self.iterations = iterations
@@ -146,6 +141,11 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
         self.n_jobs = n_jobs
         self.normed = normed
         self.max_len = max_len
+
+        if fitness is None:
+            self.fitness = logloss_fitness
+        else:
+            self.fitness = fitness
 
         # Attributes
         self.label_mapping = {}
@@ -279,78 +279,6 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             else:
                 return random_shapelet(n_shapelets)
 
-        def cost(shapelets, verbose=False):
-            """Calculate the fitness of an individual/shapelet set"""
-            start = time.time()
-            D = np.zeros((len(X), len(shapelets)))
-
-            # First check if we already calculated distances for a shapelet
-            for shap_ix, shap in enumerate(shapelets):
-                shap_hash = hash(tuple(shap.flatten()))
-                cache_val = cache.get(shap_hash)
-                if cache_val is not None:
-                    D[:, shap_ix] = cache_val
-
-            # Fill up the 0 entries
-            _pdist(X, [shap.flatten() for shap in shapelets], D)
-
-            # Fill up our cache
-            for shap_ix, shap in enumerate(shapelets):
-                shap_hash = hash(tuple(shap.flatten()))
-                cache.set(shap_hash, D[:, shap_ix])
-
-            # if len(np.unique(y)) > 2:
-            #     weighted_f1 = 0
-            #     for c in np.unique(y):
-            #         weight = sum(y == c) / len(y)
-            #         y_bin = y == c
-            #         lr = LogisticRegression()
-            #         lr.fit(D, y_bin)
-            #         preds = lr.predict_proba(D)
-            #         weighted_f1 += weight*log_loss(y_bin, preds)
-
-            #     cv_score = -weighted_f1
-            # else:
-            #     lr = LogisticRegression(multi_class='multinomial', solver='lbfgs')
-            #     lr.fit(D, y)
-            #     preds = lr.predict_proba(D)
-            #     cv_score = -log_loss(y, preds)
-
-            lr = LogisticRegression(multi_class='multinomial', solver='lbfgs')
-            lr.fit(D, y)
-            preds = lr.predict_proba(D)
-            cv_score = -log_loss(y, preds)
-
-            #svm = SVC(probability=True, kernel='linear')
-            #svm.fit(D, y)
-            #reds = svm.predict_proba(D)
-            #cv_score = -log_loss(y, preds)
-            #preds = svm.predict(D)
-            #cv_score = accuracy_score(y, preds)
-
-            # if verbose and self.verbose:
-            #     if len(np.unique(y)) > 2:
-            #         weighted_f1 = 0
-            #         for c in np.unique(y):
-            #             weight = sum(y == c) / len(y)
-            #             y_bin = y == c
-            #             lr = LogisticRegression()
-            #             lr.fit(D, y_bin)
-            #             preds = lr.predict_proba(D)
-            #             logloss = log_loss(y_bin, preds)
-            #             weighted_f1 += weight*logloss
-
-            #             print('Class {}: Loss = {}, weight = {}'.format(c, logloss, weight))
-
-            #         cv_score = -weighted_f1
-            #     else:
-            #         lr = LogisticRegression(multi_class='multinomial', solver='lbfgs')
-            #         lr.fit(D, y)
-            #         preds = lr.predict_proba(D)
-            #         cv_score = -log_loss(y, preds)
-
-            return (cv_score, sum([len(x) for x in shapelets]))
-
         def add_noise(shapelets):
             """Add random noise to a random shapelet"""
             rand_shapelet = np.random.randint(len(shapelets))
@@ -471,7 +399,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
                          create_individual)
         toolbox.register("population", tools.initRepeat, list, 
                          toolbox.individual)
-        toolbox.register("evaluate", cost)
+        toolbox.register("evaluate", lambda shaps: self.fitness(X, y, shaps, verbose=self.verbose, cache=cache))
         # Small tournaments to ensure diversity
         toolbox.register("select", tools.selTournament, tournsize=3)  
 
@@ -603,7 +531,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
                 best_it = it
                 best_score = it_stats['max']
                 best_ind = tools.selBest(pop + offspring, 1)
-                cost(best_ind[0], verbose=True)
+                self.fitness(X, y, best_ind[0], verbose=True, cache=cache)
 
                 # Overwrite self.shapelets everytime so we can
                 # pre-emptively stop the genetic algorithm

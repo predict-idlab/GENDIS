@@ -237,8 +237,8 @@ for k, c in zip(range(3), ['#edf8b1', '#7fcdbb', '#2c7fb8']):
 # ax[1][1].plot((1 - d, 1 + d), (1 - d*4, 1 + d*4), **kwargs)  
 # ax[1][1].plot((-d, +d), (-d*4, +d*4), **kwargs)     
 
-# f.text(0.,0.5, "Distance $S_2$", ha="center", va="center", fontsize=16, rotation=90)
-# f.text(0.5,0., "Distance $S_1$", ha="center", va="center", fontsize=16)
+plt.xlabel("Distance $S_2$", ha="center", va="center", fontsize=16, labelpad=20)
+plt.ylabel("Distance $S_1$", ha="center", va="center", fontsize=16, labelpad=20)
 
 # ax[0][0].legend(prop={'size': 13}, ncol=1)
 

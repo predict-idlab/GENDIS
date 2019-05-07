@@ -143,8 +143,10 @@ table_data_df['LTS'] = table_data_df['LTS'].apply(lambda x: str(x).strip('\\text
 table_data_df['FS'] = table_data_df['FS'].apply(lambda x: str(x).strip('\\textbf{').strip('}')).astype(float)
 table_data_df[['Dataset', 'GENDIS', 'ST', 'LTS', 'FS']].to_csv('results/results.csv', index=False)
 
-chunk_size = len(table_data) // 3
-for i in range(3):
+table_data = [table_data[0]] + sorted(table_data[1:], key=lambda x: x[0])
+
+chunk_size = len(table_data) // 2
+for i in range(2):
 	tabulate.LATEX_ESCAPE_RULES={}
 	if i < 2:
 		table_chunk = [table_data[0]] + table_data[i*chunk_size + 1:(i + 1)*chunk_size + 1]
