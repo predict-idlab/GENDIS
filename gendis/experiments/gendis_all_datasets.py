@@ -325,7 +325,7 @@ def gendis_discovery(X_train, y_train, X_test, y_test, shap_out_path, pred_out_p
 
     print(best_length, X_train.shape[1])
 
-    genetic_extractor = GeneticExtractor(verbose=True, population_size=100, iterations=100, wait=10, plot=None, max_len=best_length)
+    genetic_extractor = GeneticExtractor(verbose=True, population_size=20, iterations=25, wait=10, plot=None, max_len=best_length)
     start = time.time()
     genetic_extractor.fit(X_train, y_train)
     genetic_time = time.time() - start
@@ -349,7 +349,7 @@ def gendis_discovery(X_train, y_train, X_test, y_test, shap_out_path, pred_out_p
 
 data_loader = UCR_UEA_datasets()
 
-datasets = ['Phoneme', 'NonInvasiveFatalECGThorax1', 'NonInvasiveFatalECGThorax2', 'CinCECGTorso', 'HandOutlines', 'StarLightCurves']
+datasets = ['CinCECGTorso', 'HandOutlines', 'StarLightCurves']
 
 done = ['Beef', 'OSULeaf', 'ScreenType', 'Adiac', 'Fish', 'Car', 'Ham', 'Worms', 'RefrigerationDevices', 'ChlorineConcentration', 
         'CricketZ', 'Wine', 'CricketY', 'ArrowHead', 'BirdChicken', 'SmallKitchenAppliances', 'Haptics', 'ShapesAll', 'ElectricDevices', 
