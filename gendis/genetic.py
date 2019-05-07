@@ -29,7 +29,10 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_array
 from sklearn.utils.validation import check_is_fitted
 
-from fitness import logloss_fitness
+try:
+    from fitness import logloss_fitness
+except:
+    from gendis.fitness import logloss_fitness
 
 try:
     from gendis.pairwise_dist import _pdist

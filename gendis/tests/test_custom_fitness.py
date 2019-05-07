@@ -1,13 +1,20 @@
 import sys
 sys.path.append('..')
-from genetic import GeneticExtractor
 from tslearn.generators import random_walk_blobs
 import numpy as np
 
 from sklearn.metrics import f1_score
 from sklearn.linear_model import LogisticRegression
 
-from pairwise_dist import _pdist
+try:
+	from genetic import GeneticExtractor
+except:
+	from gendis.genetic import GeneticExtractor
+
+try:
+	from pairwise_dist import _pdist
+except:
+	from gendis.pairwise_dist import _pdist
 
 def f1_fitness(X, y, shapelets, verbose=False, cache=None):
     """Calculate the fitness of an individual/shapelet set"""
