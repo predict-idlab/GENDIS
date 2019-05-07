@@ -349,7 +349,7 @@ def gendis_discovery(X_train, y_train, X_test, y_test, shap_out_path, pred_out_p
 
 data_loader = UCR_UEA_datasets()
 
-datasets = ['CinCECGTorso', 'HandOutlines', 'StarLightCurves']
+datasets = ['Phoneme', 'HandOutlines', 'StarLightCurves']
 
 done = ['Beef', 'OSULeaf', 'ScreenType', 'Adiac', 'Fish', 'Car', 'Ham', 'Worms', 'RefrigerationDevices', 'ChlorineConcentration', 
         'CricketZ', 'Wine', 'CricketY', 'ArrowHead', 'BirdChicken', 'SmallKitchenAppliances', 'Haptics', 'ShapesAll', 'ElectricDevices', 
