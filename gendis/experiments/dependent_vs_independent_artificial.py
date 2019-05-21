@@ -81,11 +81,15 @@ for i, c in enumerate(set(y_train)):
 added_labels = set()
 
 plt.figure(figsize=(15, 5))
-for ts, label in zip(X_train, y_train):
-    if label in added_labels:
-        plt.plot(range(len(ts)), ts, c=cmap(label / (len(set(y_train))  - 1)), alpha=0.5)
+for i, (ts, label) in enumerate(zip(X_train, y_train)):
+    if label == 0:
+        linestyle = '--'
     else:
-        plt.plot(range(len(ts)), ts, c=cmap(label / (len(set(y_train))  - 1)), alpha=0.5, 
+        linestyle = '-'
+    if label in added_labels:
+        plt.plot(range(len(ts)), ts, c=cmap(label / (len(set(y_train))  - 1)), linestyle=linestyle, alpha=0.5)
+    else:
+        plt.plot(range(len(ts)), ts, c=cmap(label / (len(set(y_train))  - 1)), linestyle=linestyle, alpha=0.5, 
         		 label=class_map[label])
         added_labels.add(label)
 

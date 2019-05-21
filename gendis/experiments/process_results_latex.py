@@ -20,6 +20,9 @@ from tabulate import tabulate
 import Orange
 import matplotlib.pyplot as plt
 
+import ast
+import re
+
 # Comment this out if you want to process results of dependent vs independent
 DIR = 'results/genetic/'
 method1 = 'genetic'
@@ -42,8 +45,8 @@ data_loader = UCR_UEA_datasets()
 datasets = list(set([x.split('_')[0] for x in os.listdir(DIR) 
                      if x != '.keep']))
 
-table_data = [['Dataset', '\#Classes', 'TS Length', '\#Train', '\#Test', 
-               'GENDIS', 'ST', 'LTS', 'FS']]
+table_data = [['Dataset', '\#Classes', 'TS Length', '\#Train', '\#Test',
+               'GENDIS', 'ST', 'LTS', 'FS', '\#Shapelets']]
 for dataset in datasets:
     print(dataset)
     glob_path = DIR + '{}_{}*{}''_proba.csv'
@@ -51,6 +54,7 @@ for dataset in datasets:
     X_train, y_train, X_test, y_test = data_loader.load_dataset(dataset)
 
     accuracies = []
+    nr_shaps = []
 
     # Iterate over files of method 1 and calculate accuracy
     for file in method1_files:
@@ -74,6 +78,18 @@ for dataset in datasets:
         ground_truth = pd.Series(ground_truth).map(map_dict).values
 
         accuracies.append((accuracy_score(ground_truth, preds), timestamp))
+
+        shapelet_file = DIR + '{}_{}_shapelets_{}.txt'.format(dataset, 'genetic', timestamp)
+        shapelets = []
+        with open(shapelet_file, 'r') as ifp:
+            for line in ifp.read().split(']\n'):
+                if len(line):
+                    line = line.replace('...', '')
+                    proc_line = re.sub(r'\s+', ',', line)[:-1] + ']'
+                    proc_line = proc_line.replace('[,', '[')
+                    shapelets.append(np.array(ast.literal_eval(proc_line)))
+
+        nr_shaps.append(len(shapelets))
 
     gendis_accuracy = np.mean([x[0] for x in accuracies])
     ls_accuracy = np.mean(ls_accuracies.loc[dataset])
@@ -132,10 +148,12 @@ for dataset in datasets:
     else:
         table_row.append(np.around(100*fs_accuracy, 1))
 
+    table_row.append(int(np.mean(nr_shaps)))
+
     table_data.append(table_row)
 
 table_data_df = pd.DataFrame(table_data[1:], columns=['Dataset', '#Classes', 'TS Length', '#Train', '#Test', 
-               									      'GENDIS', 'ST', 'LTS', 'FS'])
+               									      'GENDIS', 'ST', 'LTS', 'FS', '#Shapelets'])
 table_data_df = table_data_df.dropna()
 table_data_df['GENDIS'] = table_data_df['GENDIS'].apply(lambda x: str(x).strip('\\textbf{').strip('}')).astype(float)
 table_data_df['ST'] = table_data_df['ST'].apply(lambda x: str(x).strip('\\textbf{').strip('}')).astype(float)

@@ -133,7 +133,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
     1.0
     """
     def __init__(self, population_size=50, iterations=25, verbose=False, 
-                 normed=False, mutation_prob=0.1, wait=10, plot=None,
+                 normed=False, mutation_prob=0.1, wait=10, plot=None, max_shaps=None,
                  crossover_prob=0.4, n_jobs=4, max_len=None, fitness=None):
         # Hyper-parameters
         self.population_size = population_size
@@ -146,6 +146,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
         self.n_jobs = n_jobs
         self.normed = normed
         self.max_len = max_len
+        self.max_shaps = max_shaps
 
         if fitness is None:
             self.fitness = logloss_fitness
@@ -209,6 +210,9 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             else:
                 self.max_len = len(X[0])
 
+        if self.max_shaps is None:
+            self.max_shaps = int(np.sqrt(self._min_length)) + 1
+
         # Sci-kit learn check for label vector.
         check_array(y)
 
@@ -252,30 +256,10 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
                                     verbose=False)
             return tskm.fit(subseries).cluster_centers_
 
-        def motif(n_shapelets, n_draw=100):
-            """Extract some motifs from sampled timeseries"""
-            shaps = []
-            for _ in range(n_shapelets):
-                rand_length = np.random.randint(4, self.max_len)
-                subset_idx = np.random.choice(range(len(X)), 
-                                              size=n_draw, 
-                                              replace=True)
-                ts = []
-                for idx in subset_idx:
-                    ts += list(X[idx].flatten())
-                matrix_profile, _ = mstamp_stomp(ts, rand_length)
-                motif_idx = matrix_profile[0, :].argsort()[-1]
-                shaps.append(np.array(ts[motif_idx:motif_idx + rand_length]))
-            if n_shapelets > 1:
-                return np.array(shaps)
-            else:
-                return np.array(shaps[0])
-
         def create_individual(n_shapelets=None):
             """Generate a random shapelet set"""
             if n_shapelets is None:
-                ub = int(np.sqrt(self._min_length)) + 1  # ST uses 10*len(X)
-                n_shapelets = np.random.randint(2, ub)
+                n_shapelets = np.random.randint(2, self.max_shaps)
             
             rand = np.random.random()
             if n_shapelets > 1:

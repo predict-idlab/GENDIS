@@ -19,43 +19,41 @@ z
   </g>
   <g id="axes_1">
    <g id="line2d_1">
-    <path clip-path="url(#p090d84b86a)" d="M 173.045455 178.236563 
-L 257.590909 186.501665 
-L 342.136364 63.473568 
-L 426.681818 180.863661 
-L 511.227273 307.794429 
-L 595.772727 181.171312 
-L 680.318182 55.8 
-L 764.863636 177.940931 
-L 849.409091 302.947939 
-L 933.954545 183.732665 
+    <path clip-path="url(#p98f5faa416)" d="M 173.045455 179.350404 
+L 257.590909 299.59154 
+L 342.136364 180.686086 
+L 426.681818 62.559183 
+L 511.227273 185.482688 
+L 595.772727 302.224446 
+L 680.318182 184.853614 
+L 764.863636 55.8 
 " style="fill:none;opacity:0.5;stroke:#440154;stroke-linecap:square;stroke-width:1.5;"/>
    </g>
    <g id="line2d_2">
-    <path clip-path="url(#p090d84b86a)" d="M 173.045455 182.173383 
-L 257.590909 57.315851 
-L 342.136364 182.865427 
-L 426.681818 306.838552 
-L 511.227273 181.665687 
-L 595.772727 56.29355 
-L 680.318182 181.853641 
-L 764.863636 307.748909 
-L 849.409091 181.939268 
-L 933.954545 58.867688 
+    <path clip-path="url(#p98f5faa416)" d="M 173.045455 182.331556 
+L 257.590909 57.702168 
+L 342.136364 181.83973 
+L 426.681818 306.872575 
+L 511.227273 182.566706 
+L 595.772727 57.01327 
+L 680.318182 182.324036 
+L 764.863636 306.997443 
+L 849.409091 181.894566 
+L 933.954545 57.494807 
 " style="fill:none;opacity:0.5;stroke:#440154;stroke-linecap:square;stroke-width:1.5;"/>
    </g>
    <g id="line2d_3">
-    <path clip-path="url(#p090d84b86a)" d="M 173.045455 181.095939 
-L 257.590909 57.520299 
-L 342.136364 181.189438 
+    <path clip-path="url(#p98f5faa416)" d="M 173.045455 181.282125 
+L 257.590909 57.888074 
+L 342.136364 181.375487 
 L 426.681818 307.8 
 " style="fill:none;opacity:0.5;stroke:#fde725;stroke-linecap:square;stroke-width:1.5;"/>
    </g>
    <g id="line2d_4">
-    <path clip-path="url(#p090d84b86a)" d="M 173.045455 180.701384 
-L 257.590909 57.723767 
-L 342.136364 181.900256 
-L 426.681818 307.429955 
+    <path clip-path="url(#p98f5faa416)" d="M 173.045455 180.88815 
+L 257.590909 58.091243 
+L 342.136364 182.08526 
+L 426.681818 307.430499 
 " style="fill:none;opacity:0.5;stroke:#fde725;stroke-linecap:square;stroke-width:1.5;"/>
    </g>
    <g id="text_1">
@@ -258,27 +256,27 @@ z
    </g>
    <g id="legend_1">
     <g id="patch_2">
-     <path d="M 144.8 313.4 
-L 258.369063 313.4 
-Q 261.169063 313.4 261.169063 310.6 
-L 261.169063 272.975943 
-Q 261.169063 270.175943 258.369063 270.175943 
-L 144.8 270.175943 
-Q 142 270.175943 142 272.975943 
-L 142 310.6 
-Q 142 313.4 144.8 313.4 
+     <path d="M 848.630937 313.4 
+L 962.2 313.4 
+Q 965 313.4 965 310.6 
+L 965 272.975943 
+Q 965 270.175943 962.2 270.175943 
+L 848.630937 270.175943 
+Q 845.830937 270.175943 845.830937 272.975943 
+L 845.830937 310.6 
+Q 845.830937 313.4 848.630937 313.4 
 z
 " style="fill:#ffffff;opacity:0.8;stroke:#cccccc;stroke-linejoin:miter;"/>
     </g>
     <g id="line2d_5">
-     <path d="M 147.6 280.675943 
-L 175.6 280.675943 
+     <path d="M 851.430937 280.675943 
+L 879.430937 280.675943 
 " style="fill:none;opacity:0.5;stroke:#440154;stroke-linecap:square;stroke-width:1.5;"/>
     </g>
     <g id="line2d_6"/>
     <g id="text_2">
      <!-- dependent -->
-     <g transform="translate(186.8 285.575943)scale(0.14 -0.14)">
+     <g transform="translate(890.630937 285.575943)scale(0.14 -0.14)">
       <use transform="scale(0.996264)" xlink:href="#CMSS17-100"/>
       <use transform="translate(48.204943 0)scale(0.996264)" xlink:href="#CMSS17-101"/>
       <use transform="translate(89.843765 0)scale(0.996264)" xlink:href="#CMSS17-112"/>
@@ -291,8 +289,8 @@ L 175.6 280.675943
      </g>
     </g>
     <g id="line2d_7">
-     <path d="M 147.6 300.187972 
-L 175.6 300.187972 
+     <path d="M 851.430937 300.187972 
+L 879.430937 300.187972 
 " style="fill:none;opacity:0.5;stroke:#fde725;stroke-linecap:square;stroke-width:1.5;"/>
     </g>
     <g id="line2d_8"/>
@@ -311,7 +309,7 @@ L 14.796875 0
 z
 " id="CMSS17-105"/>
      </defs>
-     <g transform="translate(186.8 305.087972)scale(0.14 -0.14)">
+     <g transform="translate(890.630937 305.087972)scale(0.14 -0.14)">
       <use transform="scale(0.996264)" xlink:href="#CMSS17-105"/>
       <use transform="translate(22.180723 0)scale(0.996264)" xlink:href="#CMSS17-110"/>
       <use transform="translate(70.385666 0)scale(0.996264)" xlink:href="#CMSS17-100"/>
@@ -329,7 +327,7 @@ z
   </g>
  </g>
  <defs>
-  <clipPath id="p090d84b86a">
+  <clipPath id="p98f5faa416">
    <rect height="277.2" width="837" x="135" y="43.2"/>
   </clipPath>
  </defs>

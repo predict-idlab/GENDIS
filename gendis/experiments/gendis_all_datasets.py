@@ -319,7 +319,10 @@ def gendis_discovery(X_train, y_train, X_test, y_test, shap_out_path, pred_out_p
     n_folds = min(min_samples, 3)
 
     ts_len = X_train.shape[1]
-    grid_search = GridSearchCV(pipeline, {'extractor__max_len': [ts_len // 4, ts_len // 2, 3 * ts_len // 4, ts_len]}, cv=n_folds, scoring='neg_log_loss')
+    grid_search = GridSearchCV(pipeline, 
+                               {'extractor__max_len': [ts_len // 4, ts_len // 2, 3 * ts_len // 4, ts_len],
+                                'extractor__max_shaps': [10, int(np.sqrt(len(X_train[0]))), 1000]}, 
+                               cv=n_folds, scoring='neg_log_loss')
     grid_search.fit(X_train, y_train)
     best_length = grid_search.best_params_['extractor__max_len']
 
@@ -349,7 +352,7 @@ def gendis_discovery(X_train, y_train, X_test, y_test, shap_out_path, pred_out_p
 
 data_loader = UCR_UEA_datasets()
 
-datasets = ['Phoneme', 'HandOutlines', 'StarLightCurves']
+datasets = ['Beef', 'OSULeaf', 'ScreenType', 'Adiac', 'Fish', 'Car', 'Ham']
 
 done = ['Beef', 'OSULeaf', 'ScreenType', 'Adiac', 'Fish', 'Car', 'Ham', 'Worms', 'RefrigerationDevices', 'ChlorineConcentration', 
         'CricketZ', 'Wine', 'CricketY', 'ArrowHead', 'BirdChicken', 'SmallKitchenAppliances', 'Haptics', 'ShapesAll', 'ElectricDevices', 
@@ -361,7 +364,7 @@ done = ['Beef', 'OSULeaf', 'ScreenType', 'Adiac', 'Fish', 'Car', 'Ham', 'Worms',
         'ProximalPhalanxTW', 'UWaveGestureLibraryAll', 'Yoga', 'Mallat', 'PhalangesOutlinesCorrect', 'FiftyWords', 'Meat', 'ECG200', 'ECGFiveDays', 
         'MedicalImages', 'MiddlePhalanxTW', 'InlineSkate', 'Earthquakes', 'Lightning7', 'MiddlePhalanxOutlineAgeGroup', 'DiatomSizeReduction', 
         'ShapeletSim', 'SonyAIBORobotSurface1', 'Symbols', 'DistalPhalanxTW', 'WordSynonyms', 'FaceFour', 'Lightning2', 'NonInvasiveFatalECGThorax1', 
-        'NonInvasiveFatalECGThorax2', 'CinCECGTorso']
+        'NonInvasiveFatalECGThorax2', 'CinCECGTorso', 'Phoneme', 'HandOutlines', 'StarLightCurves']
 
 if not os.path.isdir('results/genetic'): 
     os.makedirs('results/genetic')
