@@ -321,7 +321,7 @@ def gendis_discovery(X_train, y_train, X_test, y_test, shap_out_path, pred_out_p
     ts_len = X_train.shape[1]
     grid_search = GridSearchCV(pipeline, 
                                {'extractor__max_len': [ts_len // 4, ts_len // 2, 3 * ts_len // 4, ts_len],
-                                'extractor__max_shaps': [10, int(np.sqrt(len(X_train[0]))), 1000]}, 
+                                'extractor__max_shaps': [int(np.sqrt(len(X_train[0]))), 100, 1000]}, 
                                cv=n_folds, scoring='neg_log_loss')
     grid_search.fit(X_train, y_train)
     best_length = grid_search.best_params_['extractor__max_len']
