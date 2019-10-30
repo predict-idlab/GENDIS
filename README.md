@@ -81,4 +81,16 @@ We provide a few doctests and unit tests. To run the doctests: `python3 -m docte
 
 ## Contributing, Citing and Contact
 
-For now, please refer to this repository. A paper, to which you can then refer, will be published in the nearby future. If you have any questions, are experiencing bugs in the GENDIS implementation, or would like to contribute, please feel free to create an issue/pull request in this repository or take contact with me at gilles(dot)vandewiele(at)ugent(dot)be
+If you have any questions, are experiencing bugs in the GENDIS implementation, or would like to contribute, please feel free to create an issue/pull request in this repository or take contact with me at gilles(dot)vandewiele(at)ugent(dot)be
+
+If you use GENDIS in your work, please use the following citation:
+```
+@misc{v2019gendis,
+    title={GENDIS: GENetic DIscovery of Shapelets},
+    author={Gilles Vandewiele and Femke Ongenae and Filip De Turck},
+    year={2019},
+    eprint={1910.12948},
+    archivePrefix={arXiv},
+    primaryClass={cs.NE}
+}
+```
