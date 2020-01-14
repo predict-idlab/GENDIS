@@ -14,11 +14,12 @@ import pickle
 # Evolutionary algorithms framework
 from deap import base, creator, algorithms, tools
 
-# Time series operations
-from tslearn.clustering import TimeSeriesKMeans
-from tslearn.metrics import sigma_gak, cdist_gak
-from tslearn.clustering import GlobalAlignmentKernelKMeans
-from tslearn.barycenters import euclidean_barycenter
+# Initialization operators
+from operators import random_shapelet, kmeans
+# Mutation operators
+from operators import add_shapelet, remove_shapelet, mask_shapelet
+# Crossover operators
+from operators import merge_crossover, point_crossover, shap_point_crossover
 
 # Parallelization
 from pathos.multiprocessing import ProcessingPool as Pool
@@ -133,8 +134,11 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
     1.0
     """
     def __init__(self, population_size=50, iterations=25, verbose=False, 
-                 normed=False, mutation_prob=0.1, wait=10, plot=None, max_shaps=None,
-                 crossover_prob=0.4, n_jobs=4, max_len=None, fitness=None):
+                 normed=False, mutation_prob=0.1, wait=10, plot=None, 
+                 max_shaps=None, crossover_prob=0.4, n_jobs=4, max_len=None, 
+                 fitness=None, init_ops=[random_shapelet, kmeans], 
+                 cx_ops=[merge_crossover, point_crossover, shap_point_crossover], 
+                 mut_ops=[add_shapelet, remove_shapelet, mask_shapelet]):
         # Hyper-parameters
         self.population_size = population_size
         self.iterations = iterations
@@ -147,6 +151,9 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
         self.normed = normed
         self.max_len = max_len
         self.max_shaps = max_shaps
+        self.init_ops = init_ops
+        self.cx_ops = cx_ops
+        self.mut_ops = mut_ops
 
         if fitness is None:
             self.fitness = logloss_fitness
@@ -229,145 +236,13 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
         # Keep a history of the evolution
         self.history = []
 
-        def random_shapelet(n_shapelets):
-            """Extract a random subseries from the training set"""
-            shaps = []
-            for _ in range(n_shapelets):
-                rand_row = np.random.randint(X.shape[0])
-                rand_length = np.random.randint(4, min(self._min_length, self.max_len))
-                rand_col = np.random.randint(self._min_length - rand_length)
-                shaps.append(X[rand_row][rand_col:rand_col+rand_length])
-            if n_shapelets > 1:
-                return np.array(shaps)
-            else:
-                return np.array(shaps[0])
-
-        def kmeans(n_shapelets, shp_len, n_draw=25):
-            """Sample subseries from the timeseries and apply K-Means on them"""
-            # Sample `n_draw` subseries of length `shp_len`
-            n_ts, sz = len(X), self._min_length
-            indices_ts = np.random.choice(n_ts, size=n_draw, replace=True)
-            start_idx = np.random.choice(sz - shp_len + 1, size=n_draw, 
-                                         replace=True)
-            end_idx = start_idx + shp_len
-
-            subseries = np.zeros((n_draw, shp_len))
-            for i in range(n_draw):
-                subseries[i] = X[indices_ts[i]][start_idx[i]:end_idx[i]]
-
-            tskm = TimeSeriesKMeans(n_clusters=n_shapelets, metric="euclidean", 
-                                    verbose=False)
-            return tskm.fit(subseries).cluster_centers_
-
         def create_individual(n_shapelets=None):
             """Generate a random shapelet set"""
             if n_shapelets is None:
                 n_shapelets = np.random.randint(2, self.max_shaps)
-            
-            rand = np.random.random()
-            if n_shapelets > 1:
-                if rand < 1./2.:
-                    rand_length = np.random.randint(4, min(self._min_length, self.max_len))
-                    return kmeans(n_shapelets, rand_length)
-                else:
-                    return random_shapelet(n_shapelets)
-            else:
-                return random_shapelet(n_shapelets)
 
-        def add_noise(shapelets):
-            """Add random noise to a random shapelet"""
-            rand_shapelet = np.random.randint(len(shapelets))
-            tools.mutGaussian(shapelets[rand_shapelet], 
-                              mu=0, sigma=0.1, indpb=0.15)
-
-            return shapelets,
-
-        def add_shapelet(shapelets):
-            """Add a shapelet to the individual"""
-            shapelets.append(create_individual(n_shapelets=1))
-
-            return shapelets,
-
-        def remove_shapelet(shapelets):
-            """Remove a random shapelet from the individual"""
-            if len(shapelets) > 1:
-                rand_shapelet = np.random.randint(len(shapelets))
-                shapelets.pop(rand_shapelet)
-
-            return shapelets,
-
-        def mask_shapelet(shapelets):
-            """Remove a random shapelet from the individual"""
-            rand_shapelet = np.random.randint(len(shapelets))
-            if len(shapelets[rand_shapelet]) > 4:
-                rand_start = np.random.randint(len(shapelets[rand_shapelet]) - 4)
-                rand_end = np.random.randint(rand_start + 4, len(shapelets[rand_shapelet]))
-                shapelets[rand_shapelet] = shapelets[rand_shapelet][rand_start:rand_end]
-
-            return shapelets,
-
-        def merge_crossover(ind1, ind2):
-            """Merge shapelets from one set with shapelets from the other"""
-            # Construct a pairwise similarity matrix using GAK
-            _all = list(ind1) + list(ind2)
-            similarity_matrix = cdist_gak(ind1, ind2, sigma=sigma_gak(_all))
-
-            # Iterate over shapelets in `ind1` and merge them with shapelets
-            # from `ind2`
-            for row_idx in range(similarity_matrix.shape[0]):
-                # Remove all elements equal to 1.0
-                mask = similarity_matrix[row_idx, :] != 1.0
-                non_equals = similarity_matrix[row_idx, :][mask]
-                if len(non_equals):
-                    # Get the timeseries most similar to the one at row_idx
-                    max_col_idx = np.argmax(non_equals)
-                    ts1 = list(ind1[row_idx]).copy()
-                    ts2 = list(ind2[max_col_idx]).copy()
-                    # Merge them and remove nans
-                    ind1[row_idx] = euclidean_barycenter([ts1, ts2])
-                    ind1[row_idx] = ind1[row_idx][~np.isnan(ind1[row_idx])]
-
-            # Apply the same for the elements in ind2
-            for col_idx in range(similarity_matrix.shape[1]):
-                mask = similarity_matrix[:, col_idx] != 1.0
-                non_equals = similarity_matrix[:, col_idx][mask]
-                if len(non_equals):
-                    max_row_idx = np.argmax(non_equals)
-                    ts1 = list(ind1[max_row_idx]).copy()
-                    ts2 = list(ind2[col_idx]).copy()
-                    ind2[col_idx] = euclidean_barycenter([ts1, ts2])
-                    ind2[col_idx] = ind2[col_idx][~np.isnan(ind2[col_idx])]
-
-            return ind1, ind2
-
-        def point_crossover(ind1, ind2):
-            """Apply one- or two-point crossover on the shapelet sets"""
-            if len(ind1) > 1 and len(ind2) > 1:
-                if np.random.random() < 0.5:
-                    ind1, ind2 = tools.cxOnePoint(list(ind1), list(ind2))
-                else:
-                    ind1, ind2 = tools.cxTwoPoint(list(ind1), list(ind2))
-            
-            return ind1, ind2
-
-        def shap_point_crossover(ind1, ind2):
-            new_ind1, new_ind2 = [], []
-            np.random.shuffle(ind1)
-            np.random.shuffle(ind2)
-
-            for shap1, shap2 in zip(ind1, ind2):
-                if len(shap1) > 4 and len(shap2) > 4:
-                    shap1, shap2 = tools.cxOnePoint(list(shap1), list(shap2))
-                new_ind1.append(shap1)
-                new_ind2.append(shap2)
-
-
-            if len(ind1) < len(ind2):
-                new_ind2 += ind2[len(ind1):]
-            else:
-                new_ind1 += ind1[len(ind2):]
-
-            return new_ind1, new_ind2
+            init_op = np.random.choice(self.init_ops)
+            return init_op(X, n_shapelets, self._min_length, self.max_len)
 
         # Register all operations in the toolbox
         toolbox = base.Toolbox()
@@ -384,17 +259,23 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
 
         # Register all our operations to the DEAP toolbox
         toolbox.register("merge", merge_crossover)
-        toolbox.register("cx", point_crossover)
-        toolbox.register("shapcx", shap_point_crossover)
-        toolbox.register("mutate", add_noise)
-        toolbox.register("add", add_shapelet)
-        toolbox.register("remove", remove_shapelet)
-        toolbox.register("mask", mask_shapelet)
+        deap_cx_ops = []
+        for i, cx_op in enumerate(self.cx_ops):
+            toolbox.register("cx{}".format(i), cx_op)
+            deap_cx_ops.append(getattr(toolbox, ("cx{}".format(i))))
+        deap_mut_ops = []
+        for i, mut_op in enumerate(self.mut_ops):
+            toolbox.register("mutate{}".format(i), mut_op)
+            deap_mut_ops.append(getattr(toolbox, ("mutate{}".format(i))))
+        toolbox.register("create", create_individual)
         toolbox.register("individual",  tools.initIterate, creator.Individual, 
-                         create_individual)
+                         toolbox.create)
         toolbox.register("population", tools.initRepeat, list, 
                          toolbox.individual)
-        toolbox.register("evaluate", lambda shaps: self.fitness(X, y, shaps, verbose=self.verbose, cache=cache))
+        toolbox.register("evaluate", 
+                         lambda shaps: self.fitness(X, y, shaps, 
+                                                    verbose=self.verbose, 
+                                                    cache=cache))
         # Small tournaments to ensure diversity
         toolbox.register("select", tools.selTournament, tournsize=3)  
 
@@ -403,6 +284,9 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
         stats.register("avg", np.mean)
         stats.register("std", np.std)
         stats.register("max", np.max)
+        stats.register("min", np.min)
+        stats.register("q25", lambda x: np.quantile(x, 0.25))
+        stats.register("q75", lambda x: np.quantile(x, 0.75))
 
         # Initialize the population and calculate their initial fitness values
         start = time.time()
@@ -410,8 +294,6 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
         fitnesses = list(map(toolbox.evaluate, pop))
         for ind, fit in zip(pop, fitnesses):
             ind.fitness.values = fit
-        #if self.verbose:
-        #    print('Initializing population took {} seconds...'.format(time.time() - start))
 
         # Keep track of the best iteration, in order to do stop after `wait`
         # generations without improvement
@@ -457,35 +339,19 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             # Iterate over all individuals and apply CX with certain prob
             start = time.time()
             for child1, child2 in zip(offspring[::2], offspring[1::2]):
-                if np.random.random() < self.crossover_prob:
-                    toolbox.merge(child1, child2)
-                    del child1.fitness.values
-                    del child2.fitness.values
-                if np.random.random() < self.crossover_prob:
-                    toolbox.cx(child1, child2)
-                    del child1.fitness.values
-                    del child2.fitness.values
-                if np.random.random() < self.crossover_prob:
-                    toolbox.shapcx(child1, child2)
-                    del child1.fitness.values
-                    del child2.fitness.values
-            #if self.verbose:
-            #    print('Crossover operations took {} seconds'.format(time.time() - start))
+                for cx_op in deap_cx_ops:
+                    if np.random.random() < self.crossover_prob:
+                        cx_op(child1, child2)
+                        del child1.fitness.values
+                        del child2.fitness.values
 
             # Apply mutation to each individual
             start = time.time()
             for idx, indiv in enumerate(offspring):
-                if np.random.random() < self.mutation_prob:
-                    toolbox.add(indiv)
-                    del indiv.fitness.values
-                if np.random.random() < self.mutation_prob:
-                    toolbox.remove(indiv)
-                    del indiv.fitness.values
-                if np.random.random() < self.mutation_prob:
-                    toolbox.mask(indiv)
-                    del indiv.fitness.values
-            #if self.verbose:
-            #    print('Mutation operations took {} seconds'.format(time.time() - start))
+                for mut_op in deap_mut_ops:
+                    if np.random.random() < self.mutation_prob:
+                        mut_op(indiv, toolbox)
+                        del indiv.fitness.values
 
             # Update the fitness values
             start = time.time()
@@ -493,20 +359,13 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
             for ind, fit in zip(invalid_ind, fitnesses):
                 ind.fitness.values = fit
-            #if self.verbose:
-            #    print('Calculating fitnesses for {} of {} inviduals took {} seconds...'.format(len(invalid_ind), len(pop), time.time() - start))
 
-            # Replace population and update hall of fame & statistics
+            # Replace population and update hall of fame, statistics & history
             start = time.time()
             new_pop = toolbox.select(offspring, self.population_size - 1)
             fittest_ind = tools.selBest(pop + offspring, 1)
             pop[:] = new_pop + fittest_ind
             it_stats = stats.compile(pop)
-            #if self.verbose:
-            #    print('Selection took {} seconds'.format(time.time() - start))
-            #
-            #    print('Current population set sizes:', [len(x) for x in pop])
-
             self.history.append([it, it_stats])
 
             # Print our statistics
