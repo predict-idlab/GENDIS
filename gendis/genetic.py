@@ -226,6 +226,9 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
 
         cache = LRUCache(2048)
 
+        # Keep a history of the evolution
+        self.history = []
+
         def random_shapelet(n_shapelets):
             """Extract a random subseries from the training set"""
             shaps = []
@@ -503,6 +506,8 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
             #    print('Selection took {} seconds'.format(time.time() - start))
             #
             #    print('Current population set sizes:', [len(x) for x in pop])
+
+            self.history.append([it, it_stats])
 
             # Print our statistics
             if self.verbose:
