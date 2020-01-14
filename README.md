@@ -1,4 +1,4 @@
-# GENDIS [![Build Status](https://travis-ci.org/IBCNServices/GENDIS.svg?branch=master)](https://travis-ci.org/IBCNServices/GENDIS) [![PyPI version](https://badge.fury.io/py/GENDIS.svg)](https://badge.fury.io/py/GENDIS) [![Read The Docs](https://readthedocs.org/projects/gendis/badge/?version=latest)](https://gendis.readthedocs.io/en/latest/?badge=latest) 
+# GENDIS [![Build Status](https://travis-ci.org/IBCNServices/GENDIS.svg?branch=master)](https://travis-ci.org/IBCNServices/GENDIS) [![PyPI version](https://badge.fury.io/py/GENDIS.svg)](https://badge.fury.io/py/GENDIS) [![Read The Docs](https://readthedocs.org/projects/gendis/badge/?version=latest)](https://gendis.readthedocs.io/en/latest/?badge=latest) [![Downloads](https://pepy.tech/badge/gendis)](https://pepy.tech/project/gendis)
 ## GENetic DIscovery of Shapelets 
 
 In the time series classification domain, shapelets are small subseries that are discriminative for a certain class. It has been shown that by projecting the original dataset to a distance space, where each axis corresponds to the distance to a certain shapelet, classifiers are able to achieve state-of-the-art results on a plethora of datasets.
@@ -81,4 +81,16 @@ We provide a few doctests and unit tests. To run the doctests: `python3 -m docte
 
 ## Contributing, Citing and Contact
 
-For now, please refer to this repository. A paper, to which you can then refer, will be published in the nearby future. If you have any questions, are experiencing bugs in the GENDIS implementation, or would like to contribute, please feel free to create an issue/pull request in this repository or take contact with me at gilles(dot)vandewiele(at)ugent(dot)be
+If you have any questions, are experiencing bugs in the GENDIS implementation, or would like to contribute, please feel free to create an issue/pull request in this repository or take contact with me at gilles(dot)vandewiele(at)ugent(dot)be
+
+If you use GENDIS in your work, please use the following citation:
+```
+@misc{v2019gendis,
+    title={GENDIS: GENetic DIscovery of Shapelets},
+    author={Gilles Vandewiele and Femke Ongenae and Filip De Turck},
+    year={2019},
+    eprint={1910.12948},
+    archivePrefix={arXiv},
+    primaryClass={cs.NE}
+}
+```
