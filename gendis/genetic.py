@@ -14,13 +14,6 @@ import pickle
 # Evolutionary algorithms framework
 from deap import base, creator, algorithms, tools
 
-# Initialization operators
-from operators import random_shapelet, kmeans
-# Mutation operators
-from operators import add_shapelet, remove_shapelet, mask_shapelet
-# Crossover operators
-from operators import merge_crossover, point_crossover, shap_point_crossover
-
 # Parallelization
 from pathos.multiprocessing import ProcessingPool as Pool
 import multiprocessing
@@ -30,15 +23,29 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_array
 from sklearn.utils.validation import check_is_fitted
 
+# Custom fitness function
 try:
     from fitness import logloss_fitness
 except:
     from gendis.fitness import logloss_fitness
 
+# Pairwise distances
 try:
-    from gendis.pairwise_dist import _pdist
-except:
     from pairwise_dist import _pdist
+except:
+    from gendis.pairwise_dist import _pdist
+
+# Custom genetic operators
+try:
+    from operators import random_shapelet, kmeans
+    from operators import add_shapelet, remove_shapelet, mask_shapelet
+    from operators import (merge_crossover, point_crossover, 
+                           shap_point_crossover)
+except:
+    from gendis.operators import random_shapelet, kmeans
+    from gendis.operators import add_shapelet, remove_shapelet, mask_shapelet
+    from gendis.operators import (merge_crossover, point_crossover, 
+                                  shap_point_crossover)
 
 from inspect import signature
 
@@ -90,7 +97,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
         The chance that a shapelet is added to a random shapelet set every gen
 
     remove_shapelet_prob : float
-        The chance that a shapelet is deleted to a random shapelet set every gen
+        The chance that a shapelet is deleted to a random shap set every gen
 
     crossover_prob : float
         The chance that of crossing over two shapelet sets every generation
@@ -106,7 +113,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
 
     plot : object
         Whether to plot the individuals every generation (if the population 
-        size is smaller than or equal to 20), or to plot the fittest individual
+        size is <= 20), or to plot the fittest individual
 
     Attributes
     ----------
@@ -126,7 +133,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
     >>> np.random.seed(1337)
     >>> X, y = random_walk_blobs(n_ts_per_blob=20, sz=64, noise_level=0.1)
     >>> X = np.reshape(X, (X.shape[0], X.shape[1]))
-    >>> extractor = GeneticExtractor(iterations=5, n_jobs=1, population_size=10)
+    >>> extractor = GeneticExtractor(iterations=5, population_size=10)
     >>> distances = extractor.fit_transform(X, y)
     >>> lr = LogisticRegression()
     >>> _ = lr.fit(distances, y)
@@ -135,9 +142,10 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
     """
     def __init__(self, population_size=50, iterations=25, verbose=False, 
                  normed=False, mutation_prob=0.1, wait=10, plot=None, 
-                 max_shaps=None, crossover_prob=0.4, n_jobs=4, max_len=None, 
+                 max_shaps=None, crossover_prob=0.4, n_jobs=1, max_len=None, 
                  fitness=None, init_ops=[random_shapelet, kmeans], 
-                 cx_ops=[merge_crossover, point_crossover, shap_point_crossover], 
+                 cx_ops=[merge_crossover, point_crossover, 
+                         shap_point_crossover], 
                  mut_ops=[add_shapelet, remove_shapelet, mask_shapelet]):
         # Hyper-parameters
         self.population_size = population_size
