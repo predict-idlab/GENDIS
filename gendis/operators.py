@@ -1,9 +1,11 @@
 import numpy as np
 
 from tslearn.clustering import TimeSeriesKMeans
-from tslearn.metrics import sigma_gak, cdist_gak
+from tslearn.metrics import sigma_gak, cdist_gak, dtw_subsequence_path, cdist_dtw
 from tslearn.clustering import GlobalAlignmentKernelKMeans
 from tslearn.barycenters import euclidean_barycenter
+
+from scipy.spatial.distance import euclidean
 
 from deap import tools
 
@@ -13,10 +15,10 @@ from deap import tools
 # Interface
 # ---------
 # INPUT: 
-#	- X (np.array)
-#	- n_shapelets (int)
+#    - X (np.array)
+#    - n_shapelets (int)
 # OUTPUT: 
-#	- shapelets (np.array)
+#    - shapelets (np.array)
 def random_shapelet(X, n_shapelets, min_len, max_len):
     """Extract a random subseries from the training set"""
     shaps = []
@@ -31,11 +33,13 @@ def random_shapelet(X, n_shapelets, min_len, max_len):
         return np.array(shaps[0])
 
 
-def kmeans(X, n_shapelets, min_len, max_len, n_draw=25):
+def kmeans(X, n_shapelets, min_len, max_len, n_draw=None):
     """Sample subseries from the timeseries and apply K-Means on them"""
     # Sample `n_draw` subseries of length `shp_len`
     if n_shapelets == 1:
-    	return random_shapelet(X, n_shapelets, min_len, max_len)
+        return random_shapelet(X, n_shapelets, min_len, max_len)
+    if n_draw is None:
+        n_draw = max(n_shapelets, int(np.sqrt(len(X))))
     shp_len = np.random.randint(4, min(min_len, max_len))
     indices_ts = np.random.choice(len(X), size=n_draw, replace=True)
     start_idx = np.random.choice(min_len - shp_len, size=n_draw, 
@@ -56,9 +60,9 @@ def kmeans(X, n_shapelets, min_len, max_len, n_draw=25):
 # Interface
 # ---------
 # INPUT: 
-#	- shapelets (np.array)
+#    - shapelets (np.array)
 # OUTPUT: 
-#	- new_shapelets (np.array)
+#    - new_shapelets (np.array)
 def add_noise(shapelets, toolbox):
     """Add random noise to a random shapelet"""
     rand_shapelet = np.random.randint(len(shapelets))
@@ -100,13 +104,27 @@ def mask_shapelet(shapelets, toolbox):
 # Interface
 # ---------
 # INPUT: 
-#	- ind1 (np.array)
-#	- ind2 (np.array)
+#    - ind1 (np.array)
+#    - ind2 (np.array)
 # OUTPUT: 
-#	- new_ind1 (np.array)
-#	- new_ind2 (np.array)
+#    - new_ind1 (np.array)
+#    - new_ind2 (np.array)
 
-def merge_crossover(ind1, ind2):
+
+def merge(ts1, ts2):
+    if len(ts1) > len(ts2):
+        start = np.random.randint(len(ts1) - len(ts2))
+        centroid = euclidean_barycenter([ts1[start:start+len(ts2):], ts2]).flatten()
+    elif len(ts2) > len(ts1):
+        start = np.random.randint(len(ts2) - len(ts1))
+        centroid = euclidean_barycenter([ts2[start:start+len(ts1):], ts1]).flatten()
+    else:
+        start = 0
+        centroid = euclidean_barycenter([ts1, ts2]).flatten()
+
+    return centroid, start
+
+def merge_crossover(ind1, ind2, p=0.25):
     """Merge shapelets from one set with shapelets from the other"""
     # Construct a pairwise similarity matrix using GAK
     _all = list(ind1) + list(ind2)
@@ -140,6 +158,81 @@ def merge_crossover(ind1, ind2):
 
     return ind1, ind2
 
+
+import matplotlib.pyplot as plt
+
+def random_merge_crossover(ind1, ind2, p=0.25):
+    """Merge shapelets from one set with shapelets from the other"""
+    # Construct a pairwise similarity matrix using GAK
+    new_ind1, new_ind2 = [], []
+    np.random.shuffle(ind1)
+    np.random.shuffle(ind2)
+    for shap1, shap2 in zip(ind1, ind2):
+        if len(shap1) > 4 and len(shap2) > 4 and np.random.random() < p:
+            max_size = min(len(shap1), len(shap2))
+            merge_len = np.random.randint(1, max_size)
+            shap1_start = np.random.randint(len(shap1) - merge_len)
+            shap2_start = np.random.randint(len(shap2) - merge_len)
+
+            shap1 = np.concatenate((
+                shap1[:shap1_start].flatten(), 
+                euclidean_barycenter([
+                    shap1[shap1_start:shap1_start+merge_len], 
+                    shap2[shap2_start:shap2_start+merge_len]
+                ]).flatten(), 
+                shap1[shap1_start+merge_len:].flatten()
+            ))
+
+            shap2 = np.concatenate((
+                shap2[:shap2_start].flatten(), 
+                euclidean_barycenter([
+                    shap1[shap1_start:shap1_start+merge_len], 
+                    shap2[shap2_start:shap2_start+merge_len]
+                ]).flatten(), 
+                shap2[shap2_start+merge_len:].flatten()
+            ))
+
+        new_ind1.append(shap1)
+        new_ind2.append(shap2)
+
+    return new_ind1, new_ind2
+
+    # other_shaps = list(ind2[:])
+    # for ix, shap in enumerate(ind1):
+    #     if np.random.random() < p:
+    #         rand_other_shap_ix = np.random.choice(range(len(other_shaps)))
+    #         rand_other_shap = other_shaps[rand_other_shap_ix].flatten()
+    #         shap = shap.flatten()
+
+    #         # plt.figure()
+    #         # plt.plot(shap)
+    #         # plt.plot(rand_other_shap)
+    #         # plt.title('Before Random Merge')
+    #         # plt.show()
+
+    #         centroid, start = merge(shap, rand_other_shap)
+    #         ind1[ix] = np.concatenate((shap[:start], centroid, 
+    #         						   shap[start+len(centroid):]))
+
+    #         # plt.figure()
+    #         # plt.plot(ind1[ix])
+    #         # plt.title('After Random Merge')
+    #         # plt.show()
+    #         # input()
+
+    # other_shaps = list(ind1[:])
+    # for ix, shap in enumerate(ind2):
+    #     if np.random.random() < p:
+    #         rand_other_shap_ix = np.random.choice(range(len(other_shaps)))
+    #         rand_other_shap = other_shaps[rand_other_shap_ix].flatten()
+    #         shap = shap.flatten()
+    #         centroid, start = merge(shap, rand_other_shap)
+    #         ind2[ix] = np.concatenate((shap[:start], centroid, 
+    #         						   shap[start+len(centroid):]))
+
+    # return ind1, ind2
+
+
 def point_crossover(ind1, ind2):
     """Apply one- or two-point crossover on the shapelet sets"""
     if len(ind1) > 1 and len(ind2) > 1:
@@ -150,14 +243,30 @@ def point_crossover(ind1, ind2):
     
     return ind1, ind2
 
-def shap_point_crossover(ind1, ind2):
+def shap_point_crossover(ind1, ind2, p=0.25):
+    """Apply one--point crossover on pairs of shapelets from the sets"""
     new_ind1, new_ind2 = [], []
     np.random.shuffle(ind1)
     np.random.shuffle(ind2)
 
     for shap1, shap2 in zip(ind1, ind2):
-        if len(shap1) > 4 and len(shap2) > 4:
+
+        if len(shap1) > 4 and len(shap2) > 4 and np.random.random() < p:
+
+            # plt.figure()
+            # plt.plot(shap1)
+            # plt.plot(shap2)
+            # plt.title('Before Point CX')
+            # plt.show()
             shap1, shap2 = tools.cxOnePoint(list(shap1), list(shap2))
+
+            # plt.figure()
+            # plt.plot(shap1)
+            # plt.plot(shap2)
+            # plt.title('After Point CX')
+            # plt.show()
+            # input()
+
         new_ind1.append(shap1)
         new_ind2.append(shap2)
 
