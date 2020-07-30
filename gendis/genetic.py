@@ -23,6 +23,9 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_array
 from sklearn.utils.validation import check_is_fitted
 
+# Data padding
+from tslearn.utils import to_time_series_dataset
+
 # Custom fitness function
 try:
     from fitness import logloss_fitness
@@ -185,10 +188,14 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
         if isinstance(X, pd.DataFrame):
             X = X.values
 
-        if X.dtype != object:
-            return X.view(np.float64)
-        else:
-            return X
+        # Pad the timeseries such that they all have the same length
+        X = to_time_series_dataset(X)
+        if X.shape[2] > 1:
+            raise ValueError('Multivariate timeseries are currently '
+                             'not yet supported')
+        X = np.reshape(X, (X.shape[0], X.shape[1]))
+
+        return X
 
     def _convert_y(self, y):
         # Map labels to [0, ..., C-1]
@@ -214,7 +221,8 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
         """
         X = self._convert_X(X)
         y = self._convert_y(y)
-        self._min_length = min([len(x) for x in X])
+        self._min_length = np.min(np.sum(~np.isnan(X), axis=1))
+        self.min_shap_len = 4
         
         if self._min_length <= 4:
             raise Exception('Time series should be of at least length 4!')
@@ -250,7 +258,7 @@ class GeneticExtractor(BaseEstimator, TransformerMixin):
                 n_shapelets = np.random.randint(2, self.max_shaps)
 
             init_op = np.random.choice(self.init_ops)
-            return init_op(X, n_shapelets, self._min_length, self.max_len)
+            return init_op(X, n_shapelets, self.min_shap_len, self._min_length)
 
         # Register all operations in the toolbox
         toolbox = base.Toolbox()

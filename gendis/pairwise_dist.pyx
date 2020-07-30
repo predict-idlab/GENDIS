@@ -47,6 +47,8 @@ def _pdist_location(np.ndarray[DTYPE_t, ndim=2] A,
                 min_dist = np.inf
                 loc = 0
                 for k in xrange(len(A[i]) - len(B[j]) + 1):
+                    if np.isnan(A[i, k+len(B[j])-1]):
+                        break
                     dist = np.sqrt(np.sum((A[i, k:k+len(B[j])] - B[j])**2))
                     if dist < min_dist:
                         min_dist = dist

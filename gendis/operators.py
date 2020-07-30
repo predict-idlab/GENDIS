@@ -1,9 +1,10 @@
 import numpy as np
 
 from tslearn.clustering import TimeSeriesKMeans
-from tslearn.metrics import sigma_gak, cdist_gak, dtw_subsequence_path, cdist_dtw
+from tslearn.metrics import sigma_gak, cdist_gak, dtw_subsequence_path
 from tslearn.clustering import GlobalAlignmentKernelKMeans
 from tslearn.barycenters import euclidean_barycenter
+from tslearn.utils import to_time_series_dataset
 
 from scipy.spatial.distance import euclidean
 
@@ -24,8 +25,9 @@ def random_shapelet(X, n_shapelets, min_len, max_len):
     shaps = []
     for _ in range(n_shapelets):
         rand_row = np.random.randint(X.shape[0])
-        rand_length = np.random.randint(4, min(min_len, max_len))
-        rand_col = np.random.randint(min_len - rand_length)
+        length = np.sum(~np.isnan(X[rand_row]))
+        rand_length = np.random.randint(min_len, min(max_len + 1, length))
+        rand_col = np.random.randint(np.sum(~np.isnan(X[rand_row])) - rand_length)
         shaps.append(X[rand_row][rand_col:rand_col+rand_length])
     if n_shapelets > 1:
         return np.array(shaps)
@@ -40,19 +42,19 @@ def kmeans(X, n_shapelets, min_len, max_len, n_draw=None):
         return random_shapelet(X, n_shapelets, min_len, max_len)
     if n_draw is None:
         n_draw = max(n_shapelets, int(np.sqrt(len(X))))
-    shp_len = np.random.randint(4, min(min_len, max_len))
+
+    lengths = np.sum(~np.isnan(X), axis=1)
     indices_ts = np.random.choice(len(X), size=n_draw, replace=True)
-    start_idx = np.random.choice(min_len - shp_len, size=n_draw, 
-                                 replace=True)
-    end_idx = start_idx + shp_len
 
-    subseries = np.zeros((n_draw, shp_len))
+    subseries = []
     for i in range(n_draw):
-        subseries[i] = X[indices_ts[i]][start_idx[i]:end_idx[i]]
+        length = np.random.randint(min_len, min(max_len + 1, lengths[i]))
+        start = np.random.randint(lengths[i] - length)
+        subseries.append(X[indices_ts[i]][start:start + length])
 
-    tskm = TimeSeriesKMeans(n_clusters=n_shapelets, metric="euclidean", 
+    tskm = TimeSeriesKMeans(n_clusters=n_shapelets, metric="dtw", 
                             verbose=False)
-    return tskm.fit(subseries).cluster_centers_
+    return tskm.fit(to_time_series_dataset(subseries)).cluster_centers_
 
 ##########################################################################
 #                         Mutatation operators                           #
