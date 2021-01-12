@@ -1,7 +1,13 @@
 # GENDIS [![Build Status](https://travis-ci.org/IBCNServices/GENDIS.svg?branch=master)](https://travis-ci.org/IBCNServices/GENDIS) [![PyPI version](https://badge.fury.io/py/GENDIS.svg)](https://badge.fury.io/py/GENDIS) [![Read The Docs](https://readthedocs.org/projects/gendis/badge/?version=latest)](https://gendis.readthedocs.io/en/latest/?badge=latest) [![Downloads](https://pepy.tech/badge/gendis)](https://pepy.tech/project/gendis)
 ## GENetic DIscovery of Shapelets 
 
-![GENDIS](GENDIS.png "Schema of GENDIS")
+<p align="center">
+  <img src="GENDIS.png">
+</p>
+
+<p align="center">
+  <img src="evolving_shaps.gif">
+</p>
 
 In the time series classification domain, shapelets are small subseries that are discriminative for a certain class. It has been shown that by projecting the original dataset to a distance space, where each axis corresponds to the distance to a certain shapelet, classifiers are able to achieve state-of-the-art results on a plethora of datasets.
 
