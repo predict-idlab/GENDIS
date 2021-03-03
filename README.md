@@ -46,10 +46,9 @@ Construct the object. For a list of all possible parameters, and a description, 
 
 ```python
 from gendis.genetic import GeneticExtractor
-genetic_extractor = GeneticExtractor(population_size=50, iterations=25, verbose=False, 
-                                     normed=False, add_noise_prob=0.3, add_shapelet_prob=0.3, 
-                                     wait=10, plot='notebook', remove_shapelet_prob=0.3, 
-                                     crossover_prob=0.66, n_jobs=4, max_len=len(X_train) // 2)
+genetic_extractor = GeneticExtractor(population_size=50, iterations=25, verbose=True, 
+                                     mutation_prob=0.3, crossover_prob=0.3, 
+                                     wait=10, max_len=len(X_train) // 2)
 ```
 
 ### 3. Fit the `GeneticExtractor` and construct distance matrix
