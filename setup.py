@@ -14,7 +14,7 @@ setup(name='GENDIS',
       install_requires=[
           'deap==1.2.2',
           'matplotlib==2.1.2',
-      	  'numpy==1.16.0',
+      	  'numpy==1.22.0',
       	  'pandas==0.22.0',
       	  'pathos==0.2.2',
       	  'scipy==1.1.0',
